@@ -1,0 +1,3991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Timetable Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<!-- Google Translate -->
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<style>
+/* ============================================
+   THEME VARIABLES
+   ============================================ */
+:root {
+  --bg: #f8f9fa;
+  --bg-secondary: #f0f1f3;
+  --bg-hover: #e9ecef;
+  --card: #ffffff;
+  --card-border: #dee2e6;
+  --text: #1a1a2e;
+  --text-secondary: #2d2d4a;
+  --text-muted: #6c757d;
+  --text-light: #adb5bd;
+  --accent: #4a6cf7;
+  --accent-light: #e8edfe;
+  --accent-dark: #3a56d4;
+  --border: #dee2e6;
+  --border-light: #e9ecef;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --radius: 8px;
+  --input-bg: #ffffff;
+  --input-border: #ced4da;
+  --table-header: #f1f3f5;
+  --table-border: #dee2e6;
+  --alt-row: #f8f9fa;
+  --break-bg: #f1f3f5;
+  --free-cell: #fafbfc;
+  --danger: #dc3545;
+  --danger-light: #fce4e8;
+  --warning: #856404;
+  --warning-light: #fff3cd;
+  --success: #155724;
+  --success-light: #d4edda;
+  --pattern-bg: #e8edfe;
+  --pattern-border: #c5d0fa;
+  --clash-warning: #fce4e8;
+  --clash-border: #dc3545;
+  --print-bg: #ffffff;
+  --delete-hover: #fce4e8;
+  --locked-bg: #e8edfe;
+  --locked-border: #4a6cf7;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* Google Translate Styles */
+#google_translate_element {
+  display: inline-block;
+  margin-left: 10px;
+}
+#google_translate_element select {
+  padding: 6px 12px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+#google_translate_element select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Hide Google Translate banner */
+.goog-te-banner-frame {
+  display: none !important;
+}
+.goog-te-gadget-icon {
+  display: none !important;
+}
+.goog-te-gadget-simple {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+body {
+  top: 0 !important;
+}
+
+/* ============================================
+   MOBILE VIEW STYLES
+   ============================================ */
+.mobile-badge {
+  display: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mobile-nav {
+  display: none;
+  background: var(--bg-secondary);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.mobile-nav .btn {
+  margin: 0 4px;
+}
+
+@media (max-width: 768px) {
+  body { font-size: 14px; }
+  .card { padding: 16px; }
+  .settings-grid { grid-template-columns: 1fr 1fr; }
+  #entry-form .grow { flex: 1 1 100%; }
+  .timetable-grid { font-size: 0.7rem; min-width: 500px; }
+  .timetable-grid th, .timetable-grid td { padding: 6px 8px; }
+  .day-select-group label { font-size: 0.6rem; padding: 2px 6px; }
+  .view-selector-wrap { flex-direction: column; align-items: stretch; }
+  .toolbar { flex-direction: column; }
+  .toolbar-right { justify-content: center; }
+  .hero h1 { font-size: 1.8rem; }
+  .hero p { font-size: 0.85rem; }
+  .controls-row { gap: 6px; }
+  .control-btn { padding: 4px 12px; font-size: 0.75rem; }
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.hero {
+  padding: 24px 24px 20px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+.hero .badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.hero h1 {
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+.hero .grad {
+  color: var(--accent);
+}
+.hero p {
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-size: 1rem;
+}
+
+.controls-row {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.lang-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px;
+}
+.control-btn {
+  padding: 6px 16px;
+  border-radius: 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.control-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.control-btn:hover:not(.active) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.main-layout {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 16px 30px;
+}
+
+/* ============================================
+   MAIN TABS
+   ============================================ */
+.main-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 4px;
+}
+.main-tab {
+  flex: 1;
+  padding: 12px 20px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 30px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.main-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+.main-tab:hover:not(.active) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.card-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.card-head .step {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--accent);
+}
+.card-head h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.card-head p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field > span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.field input, .field select {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.field input:focus, .field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
+/* ============================================
+   PATTERN TOGGLE
+   ============================================ */
+.pattern-toggle-wrap {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--pattern-bg);
+  border-radius: 6px;
+  border: 1px solid var(--pattern-border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pattern-toggle-wrap label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text);
+}
+.pattern-toggle-wrap input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.pattern-toggle-wrap .hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.pattern-toggle-wrap .frequency-hint {
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: rgba(74, 108, 247, 0.08);
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--pattern-border);
+}
+
+/* ============================================
+   ENTRY FORM
+   ============================================ */
+#entry-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+#entry-form .grow { flex: 1 1 140px; }
+#entry-form input, #entry-form select {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+#entry-form input:focus, #entry-form select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+#entry-form label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#entry-form label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.day-select-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.day-select-group label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+}
+.day-select-group label:hover {
+  background: var(--bg-hover);
+}
+.day-select-group label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+/* ============================================
+   BULK LOCK BUTTON
+   ============================================ */
+.bulk-lock-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+}
+.bulk-lock-wrap label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+.bulk-lock-wrap .btn {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  transition: all 0.15s;
+}
+.btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+.btn.warning {
+  background: var(--bg);
+  border-color: #ffc107;
+  color: #856404;
+}
+.btn.warning:hover:not(:disabled) {
+  background: #ffc107;
+  color: #fff;
+}
+.btn.danger {
+  background: var(--bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn.danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+}
+.btn.success {
+  background: var(--bg);
+  border-color: #28a745;
+  color: #155724;
+}
+.btn.success:hover:not(:disabled) {
+  background: #28a745;
+  color: #fff;
+}
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.btn.ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.btn.small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+.btn.cta {
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+}
+.btn.cta:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
+
+.generate-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ============================================
+   TEACHER TABLE
+   ============================================ */
+#teacher-list-wrap { margin-top: 16px; }
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.list-head h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.list-head .count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 2px 12px;
+  border-radius: 12px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.teacher-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.teacher-table th {
+  background: var(--table-header);
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.teacher-table th:hover {
+  background: var(--bg-hover);
+}
+.teacher-table th .sort-icon {
+  font-size: 0.7rem;
+  margin-left: 4px;
+  color: var(--text-light);
+}
+.teacher-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text);
+  vertical-align: middle;
+}
+.teacher-table tr:hover td {
+  background: var(--bg-hover);
+}
+.teacher-table tr:nth-child(even) td {
+  background: var(--alt-row);
+}
+.teacher-table tr:nth-child(even):hover td {
+  background: var(--bg-hover);
+}
+.teacher-table .tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: inline-block;
+}
+.teacher-table .tag.pattern {
+  background: var(--pattern-bg);
+  border-color: var(--pattern-border);
+  color: var(--accent);
+}
+.teacher-table .tag.flexible {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.teacher-table .tag.heavy {
+  background: #e8edfe;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.teacher-table .tag.light {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.teacher-table .tag.locked {
+  background: var(--locked-bg);
+  border-color: var(--locked-border);
+  color: var(--accent);
+}
+.teacher-table .lock-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 6px;
+  color: var(--text-muted);
+}
+.teacher-table .lock-btn:hover {
+  color: var(--text);
+}
+.teacher-table .remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 6px;
+  color: var(--text-muted);
+}
+.teacher-table .remove-btn:hover {
+  color: var(--danger);
+}
+
+#message {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+#message.error {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid #f5c6cb;
+}
+#message.ok {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid #c3e6cb;
+}
+#message.warn {
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid #ffeeba;
+}
+#message.clash {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid #f5c6cb;
+}
+#message.hidden { display: none; }
+
+/* ============================================
+   TIMETABLE
+   ============================================ */
+.timetable-block { margin-bottom: 20px; }
+.table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
+.timetable-grid {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 750px;
+  font-size: 0.85rem;
+}
+.timetable-grid th, .timetable-grid td {
+  padding: 10px 12px;
+  border: 1px solid var(--table-border);
+  text-align: center;
+  vertical-align: middle;
+}
+.timetable-grid th {
+  background: var(--table-header);
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.timetable-grid .day-header {
+  font-weight: 700;
+  color: var(--text);
+  background: var(--table-header);
+  min-width: 80px;
+  font-size: 0.9rem;
+}
+.timetable-grid .period-header {
+  background: var(--table-header);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  min-width: 70px;
+}
+.timetable-grid .time-subheader {
+  background: var(--table-header);
+  font-weight: 400;
+  color: var(--text-light);
+  font-size: 0.7rem;
+}
+.timetable-grid .break-row td {
+  background: var(--break-bg);
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 12px;
+}
+.timetable-grid .free-cell {
+  color: var(--text-light);
+  font-size: 0.8rem;
+}
+.timetable-grid .lesson-cell {
+  background: var(--bg);
+  position: relative;
+}
+.timetable-grid .lesson-cell:hover {
+  background: var(--bg-hover);
+}
+.timetable-grid .lesson-cell.locked-cell {
+  background: var(--locked-bg);
+  border: 1px solid var(--locked-border);
+}
+.timetable-grid .lesson-cell.locked-cell:hover {
+  background: var(--locked-bg);
+}
+.timetable-grid .lesson-stack {
+  padding: 4px 6px;
+  margin: 2px 0;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.timetable-grid .lesson-stack:last-child {
+  border-bottom: none;
+}
+.timetable-grid .lesson-subject {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.timetable-grid .lesson-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.timetable-grid .delete-lesson-btn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.timetable-grid .delete-lesson-btn:hover {
+  background: var(--delete-hover);
+  color: var(--danger);
+  transform: scale(1.1);
+}
+.timetable-grid .lock-badge {
+  font-size: 0.55rem;
+  color: var(--accent);
+  background: var(--locked-bg);
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--locked-border);
+}
+.timetable-grid .clash-cell {
+  background: var(--clash-warning) !important;
+  border: 2px solid var(--clash-border) !important;
+}
+.timetable-grid .clash-icon {
+  color: var(--danger);
+  font-size: 0.7rem;
+  display: block;
+}
+.timetable-grid .pattern-highlight {
+  background: var(--pattern-bg) !important;
+  border-left: 3px solid var(--accent) !important;
+}
+.timetable-grid .pattern-badge {
+  font-size: 0.65rem;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.timetable-grid .flexible-highlight {
+  background: var(--warning-light) !important;
+  border-left: 3px solid #ffc107 !important;
+}
+.timetable-grid .flexible-badge {
+  font-size: 0.65rem;
+  color: #856404;
+  margin-top: 2px;
+}
+
+/* Class Teacher Column */
+.class-teacher-col {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 0.8rem;
+  min-width: 120px;
+}
+.class-teacher-col .co-teacher {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+/* ============================================
+   DRAG AND DROP
+   ============================================ */
+.draggable-cell {
+  cursor: grab;
+  transition: all 0.15s;
+  min-height: 50px;
+  position: relative;
+}
+.draggable-cell:hover {
+  background: var(--bg-hover);
+}
+.draggable-cell:active {
+  cursor: grabbing;
+}
+.draggable-cell.locked-cell {
+  cursor: not-allowed !important;
+  opacity: 0.8;
+}
+.draggable-cell.locked-cell:hover {
+  background: var(--locked-bg);
+}
+.drag-over {
+  background: var(--pattern-bg) !important;
+  border: 2px dashed var(--accent) !important;
+}
+.drag-source {
+  opacity: 0.3;
+}
+.drag-handle {
+  font-size: 0.6rem;
+  color: var(--text-light);
+  opacity: 0.3;
+  display: block;
+  margin-top: 2px;
+  user-select: none;
+}
+.draggable-cell:hover .drag-handle {
+  opacity: 1;
+}
+.draggable-cell.locked-cell .drag-handle {
+  display: none;
+}
+
+/* ============================================
+   TIMETABLE TITLE & TOOLBAR
+   ============================================ */
+.timetable-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+.timetable-title .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #fff;
+  background: var(--accent);
+}
+
+.pattern-summary {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--pattern-bg);
+  border-radius: 6px;
+  border: 1px solid var(--pattern-border);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.toolbar-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Hide redundant tabs */
+#view-tabs {
+  display: none !important;
+}
+.toolbar .toolbar-left {
+  display: none !important;
+}
+
+.view-toggle-group {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 3px;
+  border: 1px solid var(--border);
+}
+.view-toggle-btn {
+  padding: 4px 12px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.view-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.view-toggle-btn:hover:not(.active) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.drag-info {
+  margin-top: 8px;
+  padding: 8px 14px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  border: 1px solid var(--border-light);
+}
+.drag-info kbd {
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+}
+
+/* ============================================
+   VIEW SELECTOR SPINNER
+   ============================================ */
+.view-selector-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.view-selector-wrap label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.view-selector-wrap select {
+  padding: 8px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  min-width: 200px;
+}
+.view-selector-wrap select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ============================================
+   SUBSTITUTION
+   ============================================ */
+.substitution-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .substitution-grid { grid-template-columns: 1fr; }
+}
+.sub-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.sub-card h3, .sub-card h4 { color: var(--text); font-size: 1rem; }
+.sub-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  color: var(--text);
+  margin-bottom: 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.suggestion-item {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-left: 3px solid var(--text-light);
+}
+.sub-btn {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  color: var(--text);
+  margin: 2px;
+  font-family: inherit;
+}
+.sub-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.history-item {
+  font-size: 0.8rem;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   LOADING OVERLAY
+   ============================================ */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.hidden { display: none !important; }
+
+/* ============================================
+   FOOTER
+   ============================================ */
+footer {
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.8rem;
+  padding: 20px 0;
+  border-top: 1px solid var(--border-light);
+  margin-top: 20px;
+}
+
+/* ============================================
+   PRINT
+   ============================================ */
+@media print {
+  body { background: var(--print-bg) !important; font-size: 10px !important; }
+  .hero, .main-tabs, .card:not(#output-panel), .toolbar, .btn,
+  .generate-row, .pattern-summary, .lang-toggle, .pattern-toggle-wrap,
+  .drag-info, .controls-row, .list-head, .table-wrap, #teacher-list-wrap,
+  #entry-form, .settings-grid, .card-head, .drag-handle, .delete-lesson-btn,
+  .mobile-badge, .mobile-nav, #google_translate_element {
+    display: none !important;
+  }
+  #output-panel.card {
+    display: block !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .main-layout { padding: 0 !important; max-width: 100% !important; }
+  .timetable-block { break-inside: avoid; }
+  .timetable-grid { font-size: 8px !important; min-width: auto !important; }
+  .timetable-grid th, .timetable-grid td { padding: 4px 6px !important; }
+  .tab-content { display: block !important; }
+  .tabs, .view-toggle-group { display: none !important; }
+  .draggable-cell { cursor: default !important; }
+  .timetable-grid { border-color: #999 !important; }
+  .timetable-grid th, .timetable-grid td { border-color: #999 !important; }
+  .pattern-summary { display: none !important; }
+  .table-scroll { border: 1px solid #999 !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile Badge -->
+<div class="mobile-badge" id="mobileBadge">📱 Mobile View</div>
+
+<!-- Mobile Navigation -->
+<nav class="mobile-nav" id="mobileNav">
+  <button onclick="showToday()" class="btn ghost small">📅 Today</button>
+  <button onclick="showTomorrow()" class="btn ghost small">📅 Tomorrow</button>
+  <button onclick="showFullWeek()" class="btn ghost small">📊 Full Week</button>
+  <button onclick="shareSchedule()" class="btn ghost small">📤 Share</button>
+</nav>
+
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" style="color:var(--text);margin-top:12px;font-size:1.1rem;" data-key="generating">Generating timetable...</div>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="badge" data-key="badge">CLASH-FREE SCHEDULING</span>
+    <h1>Timetable <span class="grad">Studio</span></h1>
+    <p data-key="subtitle">Add teachers, generate timetables, and manage substitutions</p>
+    <div class="controls-row">
+      <div class="lang-toggle">
+        <button class="control-btn active" data-lang="en" onclick="setLanguage('en')">English</button>
+        <button class="control-btn" data-lang="hi" onclick="setLanguage('hi')">हिंदी</button>
+      </div>
+      <!-- Google Translate -->
+      <div id="google_translate_element"></div>
+    </div>
+  </div>
+</header>
+
+<div class="main-layout">
+  <!-- Main Navigation Tabs -->
+  <div class="main-tabs">
+    <button class="main-tab active" data-tab="timetable">📅 <span class="tab-label" data-key="tab-timetable">Timetable</span></button>
+    <button class="main-tab" data-tab="substitution">🔄 <span class="tab-label" data-key="tab-substitution">Substitution</span></button>
+  </div>
+
+  <!-- Tab 1: Timetable Studio -->
+  <div id="timetable-tab" class="tab-content active">
+    <!-- Settings Panel -->
+    <div class="card">
+      <div class="card-head">
+        <span class="step">1</span>
+        <div><h2 data-key="setup-title">School Setup</h2><p data-key="setup-desc">Configure your school day</p></div>
+      </div>
+      <div class="settings-grid">
+        <label class="field"><span data-key="start-time">Start time</span><input type="time" id="start-time" value="08:00"></label>
+        <label class="field"><span data-key="periods-day">Periods/day</span><input type="number" id="periods-per-day" min="1" max="12" value="7"></label>
+        <label class="field"><span data-key="lesson-min">Lesson (min)</span><input type="number" id="lesson-minutes" min="20" max="120" step="5" value="40"></label>
+        <label class="field"><span data-key="break-after">Break after</span><input type="number" id="break-after" min="0" max="12" value="3"></label>
+        <label class="field"><span data-key="break-length">Break (min)</span><input type="number" id="break-length" min="5" max="90" value="30"></label>
+        <label class="field"><span data-key="lessons-week">Default lessons/week</span><input type="number" id="lessons-per-week" min="1" max="10" value="5"></label>
+      </div>
+      
+      <div class="pattern-toggle-wrap">
+        <label>
+          <input type="checkbox" id="pattern-mode" checked>
+          <span data-key="pattern-label">🔒 Smart Pattern Mode</span>
+        </label>
+        <span class="hint" data-key="pattern-hint">High-frequency (5+ periods) get fixed daily patterns</span>
+        <span class="frequency-hint" data-key="frequency-hint">Music, Art, PE (1-2x/wk) stay flexible</span>
+      </div>
+    </div>
+
+    <!-- Input Panel -->
+    <div class="card">
+      <div class="card-head">
+        <span class="step">2</span>
+        <div><h2 data-key="add-title">Add Teachers</h2><p data-key="add-desc">Enter teacher, subject, class, and schedule preferences</p></div>
+      </div>
+
+      <form id="entry-form">
+        <input type="text" id="teacher-name" placeholder="Teacher" class="grow">
+        <input type="text" id="subject-name" placeholder="Subject" class="grow">
+        <input type="text" id="class-name" placeholder="Class" class="grow">
+        
+        <!-- Class Teacher & Co-Class Teacher -->
+        <input type="text" id="class-teacher" placeholder="Class Teacher" class="grow" style="flex:0.8 1 120px;">
+        <input type="text" id="co-class-teacher" placeholder="Co-Class Teacher" class="grow" style="flex:0.8 1 120px;">
+        
+        <div class="day-select-group">
+          <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">Days:</span>
+          <label><input type="checkbox" class="day-check" value="Monday" checked> M</label>
+          <label><input type="checkbox" class="day-check" value="Tuesday" checked> T</label>
+          <label><input type="checkbox" class="day-check" value="Wednesday" checked> W</label>
+          <label><input type="checkbox" class="day-check" value="Thursday" checked> Th</label>
+          <label><input type="checkbox" class="day-check" value="Friday" checked> F</label>
+          <label><input type="checkbox" class="day-check" value="Saturday" checked> S</label>
+        </div>
+        
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem;">
+          <input type="checkbox" id="double-period"> Double
+        </label>
+        <select id="subject-priority" style="padding:8px 10px; background:var(--input-bg); border:1px solid var(--input-border); border-radius:6px; color:var(--text); font-size:0.85rem;">
+          <option value="heavy">⚡ Heavy (Before Lunch)</option>
+          <option value="light" selected>🟢 Light (Any Time)</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem;">
+          <input type="checkbox" id="custom-lessons"> Custom
+        </label>
+        <input type="number" id="custom-lessons-count" min="1" max="10" value="5" style="width:70px;" disabled>
+        <button type="submit" class="btn primary" data-key="add-btn">+ Add</button>
+      </form>
+
+      <div id="message" class="hidden"></div>
+
+      <!-- Bulk Lock/Unlock -->
+      <div class="bulk-lock-wrap">
+        <label>🔒 Bulk Actions:</label>
+        <button onclick="lockAll()" class="btn small primary">🔒 Lock All</button>
+        <button onclick="unlockAll()" class="btn small ghost">🔓 Unlock All</button>
+        <span style="font-size:0.7rem;color:var(--text-muted);margin-left:8px;" id="lock-count">0 locked</span>
+      </div>
+
+      <div id="teacher-list-wrap" class="hidden">
+        <div class="list-head">
+          <h3 data-key="entries-title">Teacher Data <span class="count" id="count-pill">0</span></h3>
+          <div style="display:flex; gap:8px;">
+            <button onclick="exportData()" class="btn ghost small" data-key="export-btn">📤 Export</button>
+            <button onclick="exportToGoogleSheets()" class="btn ghost small">📊 Google Sheets</button>
+            <button id="import-btn" class="btn ghost small" data-key="import-btn">📥 Import</button>
+            <button id="clear-btn" class="btn ghost small" data-key="clear-btn">Clear</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="teacher-table" id="teacher-table">
+            <thead>
+              <tr>
+                <th onclick="sortTable(0)"># <span class="sort-icon">⇅</span></th>
+                <th onclick="sortTable(1)">Teacher <span class="sort-icon">⇅</span></th>
+                <th onclick="sortTable(2)">Subject <span class="sort-icon">⇅</span></th>
+                <th onclick="sortTable(3)">Class <span class="sort-icon">⇅</span></th>
+                <th onclick="sortTable(4)">Class Teacher <span class="sort-icon">⇅</span></th>
+                <th onclick="sortTable(5)">Co-Teacher <span class="sort-icon">⇅</span></th>
+                <th onclick="sortTable(6)">Days <span class="sort-icon">⇅</span></th>
+                <th onclick="sortTable(7)">Per/Wk <span class="sort-icon">⇅</span></th>
+                <th onclick="sortTable(8)">Type <span class="sort-icon">⇅</span></th>
+                <th>Lock</th>
+                <th>✖</th>
+              </tr>
+            </thead>
+            <tbody id="teacher-table-body"></tbody>
+          </table>
+        </div>
+        
+        <div class="generate-row">
+          <button id="generate-btn-top" class="btn cta" disabled data-key="generate-btn">🚀 Generate Timetable</button>
+          <button id="generate-btn-bottom" class="btn cta" disabled data-key="generate-btn" style="display:none;">🚀 Generate Timetable</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output Panel -->
+    <div id="output-panel" class="card hidden">
+      <div class="card-head">
+        <span class="step">3</span>
+        <div><h2 data-key="output-title">Timetable</h2><p data-key="output-desc">Clash-free schedules with pattern detection</p></div>
+      </div>
+      
+      <!-- View Selector Spinner -->
+      <div class="view-selector-wrap">
+        <label>👁️ View:</label>
+        <select id="view-selector">
+          <option value="consolidated">📋 Consolidated (All)</option>
+        </select>
+        <span style="color:var(--text-light);font-size:0.8rem;">|</span>
+        <div class="view-toggle-group">
+          <button class="view-toggle-btn active" data-view="schedule" onclick="setViewMode('schedule')">📋 Grid</button>
+          <button class="view-toggle-btn" data-view="teacher" onclick="setViewMode('teacher')">📊 Teacher</button>
+        </div>
+        <button id="drag-mode-toggle" class="btn drag-mode active small" onclick="toggleDragMode()">🔄 Swap</button>
+      </div>
+      
+      <div class="toolbar">
+        <div class="toolbar-right">
+          <button id="regenerate-btn" class="btn ghost small" data-key="shuffle-btn">🔄 Shuffle</button>
+          <button id="summary-btn" class="btn ghost small" onclick="showWorkloadSummary()" data-key="workload-btn">📊 Workload</button>
+          <button id="print-btn" class="btn ghost small" data-key="print-btn">🖨️ Print</button>
+          <button id="pdf-btn" class="btn primary small" data-key="pdf-btn">📄 PDF</button>
+          <button id="excel-btn" class="btn ghost small" data-key="excel-btn">📊 Excel</button>
+        </div>
+      </div>
+      
+      <div id="timetable-container"></div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Substitution Manager -->
+  <div id="substitution-tab" class="tab-content">
+    <div class="substitution-grid">
+      <div class="sub-card">
+        <h3 style="margin-bottom: 12px;" data-key="locate-title">🔍 Locate Teacher</h3>
+        <select id="sub-teacher-select" class="sub-select">
+          <option value="" data-key="select-teacher">-- Select a teacher --</option>
+        </select>
+        <button id="sub-locate-btn" class="btn primary" style="width:100%; margin-bottom: 12px;" data-key="show-schedule">📋 Show Schedule</button>
+        <div id="sub-teacher-profile"></div>
+        <div id="sub-teacher-schedule" style="display:none;">
+          <div id="sub-teacher-grid"></div>
+        </div>
+      </div>
+
+      <div class="sub-card">
+        <h3 style="margin-bottom: 12px;" data-key="find-sub-title">🔄 Find Substitute</h3>
+        <select id="absent-teacher-select" class="sub-select">
+          <option value="" data-key="select-absent">-- Select absent teacher --</option>
+        </select>
+        <select id="absent-day-select" class="sub-select">
+          <option value="Monday" data-key="monday">Monday</option>
+          <option value="Tuesday" data-key="tuesday">Tuesday</option>
+          <option value="Wednesday" data-key="wednesday">Wednesday</option>
+          <option value="Thursday" data-key="thursday">Thursday</option>
+          <option value="Friday" data-key="friday">Friday</option>
+          <option value="Saturday" data-key="saturday">Saturday</option>
+        </select>
+        <button id="find-substitute-btn" class="btn warning" style="width:100%; margin-bottom: 12px;" data-key="find-coverage">🎯 Find Coverage</button>
+        <div id="substitution-results"></div>
+        
+        <div style="margin-top: 16px;">
+          <h4 style="margin-bottom: 8px;" data-key="history-title">📜 Substitution History</h4>
+          <div id="sub-history" style="max-height: 120px; overflow-y: auto;"></div>
+          <button id="clear-history-btn" class="btn ghost small" style="margin-top: 6px;" data-key="clear-history">Clear History</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>Built with Timetable Studio · Clash-free scheduling · Auto-saves</footer>
+
+<script>
+// ============================================
+// GOOGLE TRANSLATE INIT
+// ============================================
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'en,hi',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+    autoDisplay: false
+  }, 'google_translate_element');
+}
+window.googleTranslateElementInit = googleTranslateElementInit;
+
+// ============================================
+// COMPLETE TIMETABLE STUDIO
+// ============================================
+
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+// ============================================
+// TRANSLATIONS
+// ============================================
+const translations = {
+  en: {
+    'tab-timetable': 'Timetable',
+    'tab-substitution': 'Substitution',
+    'setup-title': 'School Setup',
+    'setup-desc': 'Configure your school day',
+    'start-time': 'Start time',
+    'periods-day': 'Periods/day',
+    'lesson-min': 'Lesson (min)',
+    'break-after': 'Break after',
+    'break-length': 'Break (min)',
+    'lessons-week': 'Default lessons/week',
+    'pattern-label': '🔒 Smart Pattern Mode',
+    'pattern-hint': 'High-frequency (5+ periods) get fixed daily patterns',
+    'frequency-hint': 'Music, Art, PE (1-2x/wk) stay flexible',
+    'add-title': 'Add Teachers',
+    'add-desc': 'Enter teacher, subject, class, and schedule preferences',
+    'add-btn': '+ Add',
+    'entries-title': 'Teacher Data',
+    'export-btn': '📤 Export',
+    'import-btn': '📥 Import',
+    'clear-btn': 'Clear',
+    'generate-btn': '🚀 Generate Timetable',
+    'output-title': 'Timetable',
+    'output-desc': 'Clash-free schedules with pattern detection',
+    'grid-view': '📋 Grid',
+    'teacher-view': '📊 Teacher',
+    'shuffle-btn': '🔄 Shuffle',
+    'workload-btn': '📊 Workload',
+    'print-btn': '🖨️ Print',
+    'pdf-btn': '📄 PDF',
+    'excel-btn': '📊 Excel',
+    'locate-title': '🔍 Locate Teacher',
+    'select-teacher': '-- Select a teacher --',
+    'show-schedule': '📋 Show Schedule',
+    'find-sub-title': '🔄 Find Substitute',
+    'select-absent': '-- Select absent teacher --',
+    'monday': 'Monday',
+    'tuesday': 'Tuesday',
+    'wednesday': 'Wednesday',
+    'thursday': 'Thursday',
+    'friday': 'Friday',
+    'saturday': 'Saturday',
+    'find-coverage': '🎯 Find Coverage',
+    'history-title': '📜 Substitution History',
+    'clear-history': 'Clear History',
+    'no-history': 'No substitutions yet',
+    'no-lessons': 'No lessons found',
+    'no-coverage': 'No classes found or no substitutes available.',
+    'fill-fields': 'Fill all fields',
+    'duplicate': 'This combination already exists',
+    'added': 'Added',
+    'cleared': 'Cleared all entries',
+    'loaded': 'Loaded',
+    'entries': 'entries',
+    'generate-first': 'Generate first',
+    'select-teacher-msg': 'Select a teacher',
+    'select-absent-msg': 'Select absent teacher',
+    'generating': 'Generating timetable...',
+    'pattern-detected': 'Pattern Detected',
+    'consistent-lessons': 'This teacher has consistent lessons at the same time every day.',
+    'flexible-lessons': 'Some lessons are flexible (low-frequency subjects).',
+    'daily': 'Daily',
+    'flexible': 'Flexible',
+    'done': 'Done!',
+    'unplaced': 'lesson(s) couldn\'t be placed',
+    'smart-pattern': 'Smart Pattern Mode',
+    'break': 'Break',
+    'free': 'Free',
+    'drag-hint': '💡 Drag cells to rearrange | Mode: {mode} | Hold Shift to force Swap',
+    'swap-mode': '🔄 Swap',
+    'move-mode': '➡️ Move',
+    'swapped': 'Swapped',
+    'moved': 'Moved',
+    'to': 'to',
+    'clash-warning': '⚠️ CLASH: {teacher} already has {subject} at this time!',
+    'class-clash': '⚠️ Class {klass} already has {subject} at this time!',
+    'period': 'Period',
+    'heavy': 'Heavy',
+    'light': 'Light',
+    'delete-confirm': 'Remove {subject} from {day} P{period}?',
+    'deleted': 'Deleted',
+    'no-teachers': 'No teachers added yet',
+    'sort-asc': 'Sort ascending',
+    'sort-desc': 'Sort descending'
+  },
+  hi: {
+    'tab-timetable': 'टाइमटेबल',
+    'tab-substitution': 'विकल्प',
+    'setup-title': 'स्कूल सेटअप',
+    'setup-desc': 'अपने स्कूल दिवस को कॉन्फ़िगर करें',
+    'start-time': 'प्रारंभ समय',
+    'periods-day': 'प्रतिदिन अवधि',
+    'lesson-min': 'पाठ (मिनट)',
+    'break-after': 'इसके बाद ब्रेक',
+    'break-length': 'ब्रेक (मिनट)',
+    'lessons-week': 'डिफ़ॉल्ट पाठ/सप्ताह',
+    'pattern-label': '🔒 स्मार्ट पैटर्न मोड',
+    'pattern-hint': 'उच्च-आवृत्ति (5+ अवधि) को प्रतिदिन निर्धारित पैटर्न मिलता है',
+    'frequency-hint': 'संगीत, कला, शारीरिक (1-2x/सप्ताह) लचीले रहते हैं',
+    'add-title': 'शिक्षक जोड़ें',
+    'add-desc': 'शिक्षक, विषय, कक्षा और प्राथमिकता दर्ज करें',
+    'add-btn': '+ जोड़ें',
+    'entries-title': 'शिक्षक डेटा',
+    'export-btn': '📤 निर्यात',
+    'import-btn': '📥 आयात',
+    'clear-btn': 'साफ़ करें',
+    'generate-btn': '🚀 टाइमटेबल बनाएं',
+    'output-title': 'टाइमटेबल',
+    'output-desc': 'क्लैश-मुक्त शेड्यूल पैटर्न डिटेक्शन के साथ',
+    'grid-view': '📋 ग्रिड',
+    'teacher-view': '📊 शिक्षक',
+    'shuffle-btn': '🔄 शफल',
+    'workload-btn': '📊 कार्यभार',
+    'print-btn': '🖨️ प्रिंट',
+    'pdf-btn': '📄 पीडीएफ',
+    'excel-btn': '📊 एक्सेल',
+    'locate-title': '🔍 शिक्षक खोजें',
+    'select-teacher': '-- शिक्षक चुनें --',
+    'show-schedule': '📋 शेड्यूल दिखाएं',
+    'find-sub-title': '🔄 विकल्प खोजें',
+    'select-absent': '-- अनुपस्थित शिक्षक चुनें --',
+    'monday': 'सोमवार',
+    'tuesday': 'मंगलवार',
+    'wednesday': 'बुधवार',
+    'thursday': 'गुरुवार',
+    'friday': 'शुक्रवार',
+    'saturday': 'शनिवार',
+    'find-coverage': '🎯 विकल्प खोजें',
+    'history-title': '📜 विकल्प इतिहास',
+    'clear-history': 'इतिहास साफ़ करें',
+    'no-history': 'अभी तक कोई विकल्प नहीं',
+    'no-lessons': 'कोई पाठ नहीं मिला',
+    'no-coverage': 'कोई कक्षा नहीं मिली या कोई विकल्प उपलब्ध नहीं है।',
+    'fill-fields': 'सभी फ़ील्ड भरें',
+    'duplicate': 'यह संयोजन पहले से मौजूद है',
+    'added': 'जोड़ा गया',
+    'cleared': 'सभी प्रविष्टियाँ साफ़ कर दी गईं',
+    'loaded': 'लोड किया गया',
+    'entries': 'प्रविष्टियाँ',
+    'generate-first': 'पहले जनरेट करें',
+    'select-teacher-msg': 'शिक्षक चुनें',
+    'select-absent-msg': 'अनुपस्थित शिक्षक चुनें',
+    'generating': 'टाइमटेबल बन रहा है...',
+    'pattern-detected': 'पैटर्न मिला',
+    'consistent-lessons': 'इस शिक्षक के प्रतिदिन समान समय पर स्थिर पाठ हैं।',
+    'flexible-lessons': 'कुछ पाठ लचीले हैं (कम-आवृत्ति विषय)।',
+    'daily': 'प्रतिदिन',
+    'flexible': 'लचीला',
+    'done': 'तैयार!',
+    'unplaced': 'पाठ नहीं रखे जा सके',
+    'smart-pattern': 'स्मार्ट पैटर्न मोड',
+    'break': 'ब्रेक',
+    'free': 'मुक्त',
+    'drag-hint': '💡 सेल खींचकर पुनर्व्यवस्थित करें | मोड: {mode} | स्वैप के लिए Shift दबाएं',
+    'swap-mode': '🔄 स्वैप',
+    'move-mode': '➡️ मूव',
+    'swapped': 'बदला गया',
+    'moved': 'स्थानांतरित किया गया',
+    'to': 'को',
+    'clash-warning': '⚠️ टकराव: {teacher} का इस समय {subject} पहले से है!',
+    'class-clash': '⚠️ कक्षा {klass} का इस समय {subject} पहले से है!',
+    'period': 'अवधि',
+    'heavy': 'भारी',
+    'light': 'हल्का',
+    'delete-confirm': '{day} P{period} से {subject} हटाएं?',
+    'deleted': 'हटा दिया गया',
+    'no-teachers': 'अभी तक कोई शिक्षक नहीं जोड़ा गया',
+    'sort-asc': 'आरोही क्रम',
+    'sort-desc': 'अवरोही क्रम'
+  }
+};
+
+// ============================================
+// STATE
+// ============================================
+let entries = [];
+let schedule = null;
+let activeView = "consolidated";
+let viewMode = "schedule";
+let substitutionHistory = [];
+let currentLang = 'en';
+let dragMode = 'swap';
+let dragSource = null;
+let dragData = null;
+let sortColumn = -1;
+let sortAsc = true;
+let isMobile = false;
+let mobileView = 'full';
+
+// Class Teacher mapping
+const classTeacherMap = {};
+
+// Subject colors
+const subjectColors = {};
+
+function getSubjectColor(subject) {
+  if (!subject) return '#4a6cf7';
+  if (!subjectColors[subject]) {
+    const colors = ['#4a6cf7', '#6c5ce7', '#00b894', '#00cec9', '#0984e3', '#6c5ce7', '#fd79a8', '#fdcb6e'];
+    let hash = 0;
+    for (let i = 0; i < subject.length; i++) {
+      hash = subject.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    subjectColors[subject] = colors[Math.abs(hash) % colors.length];
+  }
+  return subjectColors[subject];
+}
+
+// ============================================
+// HELPERS
+// ============================================
+function esc(s) { 
+  if (!s) return '';
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); 
+}
+function initials(n) { 
+  if (!n) return '?';
+  return n.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join(""); 
+}
+function $(id) { return document.getElementById(id); }
+
+function t(key) { return translations[currentLang]?.[key] || key; }
+
+function setLanguage(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-toggle .control-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+  document.querySelectorAll('[data-key]').forEach(el => {
+    const key = el.dataset.key;
+    if (key && translations[lang]?.[key]) {
+      if (el.tagName === 'INPUT' || el.tagName === 'SELECT') {
+        if (el.placeholder) el.placeholder = translations[lang][key];
+      } else {
+        el.textContent = translations[lang][key] || el.textContent;
+      }
+    }
+  });
+  document.querySelectorAll('option[data-key]').forEach(el => {
+    const key = el.dataset.key;
+    if (key && translations[lang]?.[key]) el.textContent = translations[lang][key];
+  });
+  document.querySelectorAll('button[data-key]').forEach(el => {
+    const key = el.dataset.key;
+    if (key && translations[lang]?.[key]) {
+      const icon = el.textContent.match(/^[^\s]+\s/);
+      el.textContent = icon ? icon[0] + translations[lang][key] : translations[lang][key];
+    }
+  });
+  updateDragInfo();
+  updateDragModeButton();
+  if (schedule) renderTimetables();
+}
+window.setLanguage = setLanguage;
+
+function showMessage(msg, type) {
+  const m = $("message");
+  if (!m) return;
+  m.textContent = msg;
+  m.className = type;
+  setTimeout(() => { if ($("message")?.className === type) $("message").className = "hidden"; }, 4000);
+}
+
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+function range(a, b) { const r=[]; for(let i=a;i<=b;i++) r.push(i); return r; }
+function shuffle(arr) { for(let i=arr.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+function fmt(total) { const h=Math.floor(total/60)%24; const m=total%60; return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`; }
+
+// ============================================
+// BULK LOCK/UNLOCK
+// ============================================
+function lockAll() {
+  if (entries.length === 0) {
+    showMessage('No entries to lock', 'warn');
+    return;
+  }
+  const count = entries.filter(e => !e.locked).length;
+  if (count === 0) {
+    showMessage('All entries are already locked', 'warn');
+    return;
+  }
+  if (confirm(`Lock ${count} entr${count === 1 ? 'y' : 'ies'}?`)) {
+    entries.forEach(e => e.locked = true);
+    renderList();
+    saveToLocalStorage();
+    if (schedule) renderTimetables();
+    showMessage(`🔒 Locked ${count} entr${count === 1 ? 'y' : 'ies'}`, 'ok');
+  }
+}
+window.lockAll = lockAll;
+
+function unlockAll() {
+  if (entries.length === 0) {
+    showMessage('No entries to unlock', 'warn');
+    return;
+  }
+  const count = entries.filter(e => e.locked).length;
+  if (count === 0) {
+    showMessage('All entries are already unlocked', 'warn');
+    return;
+  }
+  if (confirm(`Unlock ${count} entr${count === 1 ? 'y' : 'ies'}?`)) {
+    entries.forEach(e => e.locked = false);
+    renderList();
+    saveToLocalStorage();
+    if (schedule) renderTimetables();
+    showMessage(`🔓 Unlocked ${count} entr${count === 1 ? 'y' : 'ies'}`, 'ok');
+  }
+}
+window.unlockAll = unlockAll;
+
+function updateLockCount() {
+  const locked = entries.filter(e => e.locked).length;
+  document.getElementById('lock-count').textContent = `${locked} locked`;
+}
+
+// ============================================
+// LOCAL STORAGE
+// ============================================
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem("timetableStudioData", JSON.stringify({ entries, timestamp: new Date().toISOString() }));
+  } catch(e) { console.warn('Save failed', e); }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem("timetableStudioData");
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.entries) {
+        entries = data.entries;
+        // Ensure class teacher fields exist
+        entries.forEach(e => {
+          if (!e.classTeacher) e.classTeacher = '';
+          if (!e.coClassTeacher) e.coClassTeacher = '';
+        });
+        renderList();
+        showMessage(`${t('loaded')} ${entries.length} ${t('entries')}`, "ok");
+      }
+    }
+  } catch(e) { console.warn('Load failed', e); }
+  loadSubstitutionHistory();
+}
+
+function loadSubstitutionHistory() {
+  try {
+    const s = localStorage.getItem("subHistory");
+    if (s) { substitutionHistory = JSON.parse(s); renderHistory(); }
+  } catch(e) { console.warn('History load failed', e); }
+}
+
+function saveSubstitutionHistory() {
+  try {
+    localStorage.setItem("subHistory", JSON.stringify(substitutionHistory));
+    renderHistory();
+  } catch(e) { console.warn('History save failed', e); }
+}
+
+function renderHistory() {
+  const container = document.getElementById("sub-history");
+  if (!container) return;
+  if (substitutionHistory.length === 0) {
+    container.innerHTML = `<div style='text-align:center;color:var(--text-light);padding:8px;font-size:0.8rem;'>${t('no-history')}</div>`;
+    return;
+  }
+  container.innerHTML = substitutionHistory.slice().reverse().slice(0,15).map(h =>
+    `<div class="history-item">
+      📅 ${esc(h.date)}<br>
+      👩‍🏫 ${esc(h.absentTeacher)} → ${esc(h.substituteTeacher)}<br>
+      📚 ${esc(h.klass)} | ${esc(h.subject)} (${esc(h.day)} P${h.period})
+    </div>`
+  ).join('');
+}
+
+// ============================================
+// TEACHER CONFLICT CHECK FUNCTIONS
+// ============================================
+function isTeacherBusy(teacher, day, period, grid) {
+  if (!grid || !grid[day] || !grid[day][period]) return false;
+  return grid[day][period].some(lesson => lesson.teacher === teacher);
+}
+
+function isClassBusy(klass, day, period, grid) {
+  if (!grid || !grid[day] || !grid[day][period]) return false;
+  return grid[day][period].some(lesson => lesson.klass === klass);
+}
+
+function findNextAvailableSlot(lesson, grid, periods) {
+  const availDays = lesson.days || DAYS;
+  const shuffledDays = shuffle([...availDays]);
+  const shuffledPeriods = shuffle(range(1, periods));
+  
+  for (const day of shuffledDays) {
+    for (const p of shuffledPeriods) {
+      if (!isTeacherBusy(lesson.teacher, day, p, grid) && 
+          !isClassBusy(lesson.klass, day, p, grid)) {
+        return { day, period: p };
+      }
+    }
+  }
+  return null;
+}
+
+// ============================================
+// CHECK IF LESSON IS LOCKED
+// ============================================
+function isLessonLocked(lesson) {
+  if (!lesson) return false;
+  if (lesson.locked !== undefined) return lesson.locked;
+  const entry = entries.find(e => 
+    e.teacher === lesson.teacher && 
+    e.subject === lesson.subject && 
+    e.klass === lesson.klass
+  );
+  return entry ? entry.locked : false;
+}
+
+// ============================================
+// BUILD SLOTS
+// ============================================
+function buildSlots() {
+  const lessonMinutes = clamp(parseInt($("lesson-minutes").value, 10) || 40, 20, 120);
+  const periods = clamp(parseInt($("periods-per-day").value, 10) || 7, 1, 12);
+  const breakAfter = clamp(parseInt($("break-after").value, 10) || 0, 0, 12);
+  const breakLength = clamp(parseInt($("break-length").value, 10) || 0, 0, 90);
+  const [h, m] = ($("start-time").value || "08:00").split(":").map(Number);
+  let minutes = h * 60 + m;
+  const slots = [];
+  for (let p = 1; p <= periods; p++) {
+    slots.push({ period: p, start: fmt(minutes), end: fmt(minutes + lessonMinutes) });
+    minutes += lessonMinutes;
+    if (breakAfter > 0 && p === breakAfter && p < periods) {
+      slots.push({ period: "break", start: fmt(minutes), end: fmt(minutes + breakLength) });
+      minutes += breakLength;
+    }
+  }
+  return { periods, slots, lessonMinutes };
+}
+
+function getLessonsPerWeek(entry) {
+  if (entry.customLessons !== null && entry.customLessons !== undefined) {
+    return entry.customLessons;
+  }
+  return parseInt($("lessons-per-week").value, 10) || 5;
+}
+
+// ============================================
+// ENTRY MANAGEMENT
+// ============================================
+function renderList() {
+  const tbody = document.getElementById("teacher-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  
+  if (entries.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-light);padding:20px;font-size:0.9rem;">${t('no-teachers')}</td></tr>`;
+    document.getElementById("teacher-list-wrap").classList.add("hidden");
+    document.getElementById("count-pill").textContent = "0";
+    document.getElementById("generate-btn-top").disabled = true;
+    document.getElementById("generate-btn-bottom").disabled = true;
+    updateLockCount();
+    return;
+  }
+  
+  entries.forEach((x, i) => {
+    const tr = document.createElement("tr");
+    const perWeek = getLessonsPerWeek(x);
+    const daysStr = x.days ? x.days.join(', ') : 'All';
+    const priorityLabel = x.priority === 'heavy' ? t('heavy') : t('light');
+    const priorityClass = x.priority === 'heavy' ? 'heavy' : 'light';
+    const patternTag = perWeek >= 5 ? '<span class="tag pattern">📅 Pattern</span>' : 
+                       perWeek <= 2 ? '<span class="tag flexible">🔄 Flex</span>' : '';
+    const lockTag = x.locked ? '<span class="tag locked">🔒 Locked</span>' : '';
+    const classTeacherDisplay = x.classTeacher || '-';
+    const coClassTeacherDisplay = x.coClassTeacher || '-';
+    
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td><strong>${esc(x.teacher)}</strong></td>
+      <td>${esc(x.subject)}</td>
+      <td>${esc(x.klass)}</td>
+      <td>${esc(classTeacherDisplay)}</td>
+      <td>${esc(coClassTeacherDisplay)}</td>
+      <td style="font-size:0.7rem;">${daysStr}</td>
+      <td>${perWeek}${x.isDouble ? ' (2x)' : ''}</td>
+      <td><span class="tag ${priorityClass}">${priorityLabel}</span> ${patternTag} ${lockTag}</td>
+      <td><button class="lock-btn" onclick="toggleLock(${i})" title="${x.locked ? 'Unlock' : 'Lock'}">${x.locked ? '🔒' : '🔓'}</button></td>
+      <td><button class="remove-btn" onclick="removeEntry(${i})" title="Delete">✖</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  document.getElementById("teacher-list-wrap").classList.remove("hidden");
+  document.getElementById("count-pill").textContent = entries.length;
+  document.getElementById("generate-btn-top").disabled = false;
+  document.getElementById("generate-btn-bottom").disabled = false;
+  populateSubstitutionDropdowns();
+  updateViewSelector();
+  updateLockCount();
+}
+
+function removeEntry(i) {
+  if (entries[i].locked) {
+    showMessage(`${entries[i].teacher} is locked. Unlock first.`, "warn");
+    return;
+  }
+  if (confirm(`Delete "${entries[i].teacher} - ${entries[i].subject} (${entries[i].klass})"?`)) {
+    entries.splice(i, 1);
+    renderList();
+    saveToLocalStorage();
+    schedule = null;
+    $("output-panel")?.classList.add("hidden");
+  }
+}
+window.removeEntry = removeEntry;
+
+function toggleLock(i) {
+  entries[i].locked = !entries[i].locked;
+  renderList();
+  saveToLocalStorage();
+  if (schedule) renderTimetables();
+}
+window.toggleLock = toggleLock;
+
+// ============================================
+// SORT TABLE
+// ============================================
+function sortTable(col) {
+  if (sortColumn === col) {
+    sortAsc = !sortAsc;
+  } else {
+    sortColumn = col;
+    sortAsc = true;
+  }
+  
+  const headers = document.querySelectorAll('.teacher-table th');
+  headers.forEach((h, i) => {
+    const icon = h.querySelector('.sort-icon');
+    if (icon) {
+      if (i === col) {
+        icon.textContent = sortAsc ? '↑' : '↓';
+      } else {
+        icon.textContent = '⇅';
+      }
+    }
+  });
+  
+  const sorted = [...entries];
+  sorted.sort((a, b) => {
+    let valA, valB;
+    if (col === 0) return 0;
+    if (col === 6) {
+      valA = a.days ? a.days.join(',') : 'all';
+      valB = b.days ? b.days.join(',') : 'all';
+    } else if (col === 7) {
+      valA = getLessonsPerWeek(a);
+      valB = getLessonsPerWeek(b);
+    } else if (col === 8) {
+      valA = a.priority || 'light';
+      valB = b.priority || 'light';
+    } else {
+      const keys = ['teacher', 'subject', 'klass', 'classTeacher', 'coClassTeacher'];
+      const key = keys[col - 1] || 'teacher';
+      valA = (a[key] || '').toLowerCase();
+      valB = (b[key] || '').toLowerCase();
+    }
+    
+    if (valA < valB) return sortAsc ? -1 : 1;
+    if (valA > valB) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  
+  entries = sorted;
+  renderList();
+  saveToLocalStorage();
+}
+window.sortTable = sortTable;
+
+// ============================================
+// UPDATE VIEW SELECTOR
+// ============================================
+function updateViewSelector() {
+  const selector = document.getElementById("view-selector");
+  if (!selector) return;
+  
+  const teachers = [...new Set(entries.map(e => e.teacher))];
+  const classes = [...new Set(entries.map(e => e.klass))];
+  
+  let html = `<option value="consolidated">📋 ${t('tab-timetable')} (All)</option>`;
+  html += `<option value="workload">📊 ${t('workload-btn')}</option>`;
+  
+  if (teachers.length > 0) {
+    html += `<optgroup label="👩‍🏫 ${t('entries-title')}">`;
+    teachers.forEach(t => html += `<option value="teacher:${t}">${esc(t)}</option>`);
+    html += `</optgroup>`;
+  }
+  
+  if (classes.length > 0) {
+    html += `<optgroup label="📚 Classes">`;
+    classes.forEach(c => html += `<option value="class:${c}">${esc(c)}</option>`);
+    html += `</optgroup>`;
+  }
+  
+  selector.innerHTML = html;
+  selector.value = activeView;
+}
+
+// ============================================
+// DRAG MODE
+// ============================================
+function toggleDragMode() {
+  dragMode = dragMode === 'swap' ? 'move' : 'swap';
+  updateDragModeButton();
+  updateDragInfo();
+  showMessage(`Mode: ${dragMode === 'swap' ? t('swap-mode') : t('move-mode')}`, "ok");
+}
+window.toggleDragMode = toggleDragMode;
+
+function updateDragModeButton() {
+  const btn = document.getElementById("drag-mode-toggle");
+  if (btn) {
+    btn.textContent = dragMode === 'swap' ? '🔄 Swap' : '➡️ Move';
+    btn.classList.toggle('active', dragMode === 'move');
+  }
+}
+
+function updateDragInfo() {
+  const info = document.querySelector('.drag-info');
+  if (info) {
+    const modeLabel = dragMode === 'swap' ? t('swap-mode') : t('move-mode');
+    info.innerHTML = t('drag-hint').replace('{mode}', `<strong>${modeLabel}</strong>`);
+  }
+}
+
+// ============================================
+// FORM SUBMISSION
+// ============================================
+document.getElementById("entry-form")?.addEventListener("submit", function(e) {
+  e.preventDefault();
+  
+  const teacher = document.getElementById("teacher-name").value.trim();
+  const subject = document.getElementById("subject-name").value.trim();
+  const klass = document.getElementById("class-name").value.trim();
+  const classTeacher = document.getElementById("class-teacher").value.trim();
+  const coClassTeacher = document.getElementById("co-class-teacher").value.trim();
+  const isDouble = document.getElementById("double-period")?.checked || false;
+  const priority = document.getElementById("subject-priority")?.value || "light";
+  const customLessons = document.getElementById("custom-lessons")?.checked ? 
+    parseInt(document.getElementById("custom-lessons-count")?.value || 5) : null;
+  
+  const dayChecks = document.querySelectorAll('.day-check:checked');
+  const days = Array.from(dayChecks).map(cb => cb.value);
+  
+  if (!teacher || !subject || !klass) {
+    showMessage(t('fill-fields'), "error");
+    return;
+  }
+  
+  const dup = entries.some(e =>
+    e.teacher.toLowerCase() === teacher.toLowerCase() &&
+    e.subject.toLowerCase() === subject.toLowerCase() &&
+    e.klass.toLowerCase() === klass.toLowerCase()
+  );
+  if (dup) {
+    showMessage(t('duplicate'), "warn");
+    return;
+  }
+  
+  entries.push({
+    teacher, subject, klass, classTeacher, coClassTeacher,
+    isDouble, priority,
+    customLessons, days: days.length === 6 ? null : days,
+    locked: false
+  });
+  
+  this.reset();
+  document.getElementById("double-period").checked = false;
+  document.getElementById("custom-lessons").checked = false;
+  document.getElementById("custom-lessons-count").disabled = true;
+  document.querySelectorAll('.day-check').forEach(cb => cb.checked = true);
+  document.getElementById("teacher-name").focus();
+  
+  renderList();
+  saveToLocalStorage();
+  showMessage(`${t('added')} ${teacher} - ${subject} (${klass})`, "ok");
+});
+
+document.getElementById("custom-lessons")?.addEventListener("change", function() {
+  document.getElementById("custom-lessons-count").disabled = !this.checked;
+});
+
+document.getElementById("clear-btn")?.addEventListener("click", () => {
+  if (entries.length && confirm("Clear all entries?")) {
+    entries = [];
+    renderList();
+    saveToLocalStorage();
+    schedule = null;
+    document.getElementById("output-panel")?.classList.add("hidden");
+    showMessage(t('cleared'), "ok");
+  }
+});
+
+// ============================================
+// SMART PATTERN ALGORITHM WITH TEACHER CONFLICT CHECK
+// ============================================
+function getFrequencyCategory(perWeek) {
+  if (perWeek >= 5) return 'high';
+  if (perWeek >= 3) return 'medium';
+  return 'low';
+}
+
+function tryAssignSmartPattern(periods) {
+  const grid = {};
+  DAYS.forEach(d => {
+    grid[d] = {};
+    for (let p = 1; p <= periods; p++) grid[d][p] = [];
+  });
+  
+  const teacherEntries = {};
+  for (const e of entries) {
+    if (!teacherEntries[e.teacher]) teacherEntries[e.teacher] = [];
+    teacherEntries[e.teacher].push(e);
+  }
+  
+  const allTeachers = Object.keys(teacherEntries);
+  shuffle(allTeachers);
+  let conflictCount = 0;
+  
+  // Phase 1: High-frequency entries with fixed patterns
+  for (const teacher of allTeachers) {
+    const lessons = teacherEntries[teacher].filter(e => getFrequencyCategory(getLessonsPerWeek(e)) === 'high');
+    if (lessons.length === 0) continue;
+    
+    // Get locked lessons for this teacher
+    const lockedLessons = lessons.filter(e => e.locked);
+    const unlockedLessons = lessons.filter(e => !e.locked);
+    
+    let periodsPerDay = 0;
+    for (const e of lessons) {
+      const perWeek = getLessonsPerWeek(e);
+      const mult = e.isDouble ? 2 : 1;
+      periodsPerDay += Math.ceil((perWeek * mult) / DAYS.length);
+    }
+    periodsPerDay = Math.min(periodsPerDay, periods);
+    
+    const availablePeriods = [];
+    for (let p = 1; p <= periods; p++) {
+      let isAvailable = true;
+      for (const day of DAYS) {
+        if (isTeacherBusy(teacher, day, p, grid)) {
+          isAvailable = false;
+          break;
+        }
+        if (lessons.some(l => isClassBusy(l.klass, day, p, grid))) {
+          isAvailable = false;
+          break;
+        }
+      }
+      if (isAvailable) availablePeriods.push(p);
+    }
+    
+    if (availablePeriods.length === 0) continue;
+    
+    const selectedPeriods = [];
+    const count = Math.min(periodsPerDay, availablePeriods.length);
+    const step = availablePeriods.length / count;
+    for (let i = 0; i < count; i++) {
+      const idx = Math.min(Math.floor(i * step + step / 2), availablePeriods.length - 1);
+      selectedPeriods.push(availablePeriods[idx]);
+    }
+    
+    let lessonIdx = 0;
+    for (const p of selectedPeriods) {
+      if (lessonIdx >= lessons.length) break;
+      const lesson = lessons[lessonIdx];
+      for (const day of DAYS) {
+        if (lesson.days && !lesson.days.includes(day)) continue;
+        if (!isTeacherBusy(teacher, day, p, grid) && !isClassBusy(lesson.klass, day, p, grid)) {
+          const lessonWithLock = { ...lesson, patternType: 'high' };
+          grid[day][p].push(lessonWithLock);
+          if (lesson.isDouble && p + 1 <= periods) {
+            grid[day][p + 1].push({ ...lesson, isDoublePart: true, patternType: 'high' });
+          }
+        } else {
+          conflictCount++;
+        }
+      }
+      lessonIdx++;
+    }
+  }
+  
+  // Phase 2: Low-frequency entries (flexible)
+  for (const teacher of allTeachers) {
+    const lessons = teacherEntries[teacher].filter(e => getFrequencyCategory(getLessonsPerWeek(e)) !== 'high');
+    if (lessons.length === 0) continue;
+    
+    const lockedLessons = lessons.filter(e => e.locked);
+    const unlockedLessons = lessons.filter(e => !e.locked);
+    
+    for (const lesson of lockedLessons) {
+      const perWeek = getLessonsPerWeek(lesson);
+      const mult = lesson.isDouble ? 2 : 1;
+      const count = perWeek * mult;
+      let placedCount = 0;
+      const availDays = lesson.days || DAYS;
+      
+      for (const day of availDays) {
+        if (placedCount >= count) break;
+        for (let p = 1; p <= periods; p++) {
+          if (placedCount >= count) break;
+          if (!isTeacherBusy(teacher, day, p, grid) && !isClassBusy(lesson.klass, day, p, grid)) {
+            grid[day][p].push({ ...lesson, patternType: 'flexible', locked: true });
+            if (lesson.isDouble && p + 1 <= periods) {
+              grid[day][p + 1].push({ ...lesson, isDoublePart: true, patternType: 'flexible', locked: true });
+            }
+            placedCount++;
+          }
+        }
+      }
+    }
+    
+    for (const lesson of unlockedLessons) {
+      const perWeek = getLessonsPerWeek(lesson);
+      const mult = lesson.isDouble ? 2 : 1;
+      const count = perWeek * mult;
+      let placedCount = 0;
+      let attempts = 0;
+      const availDays = lesson.days || DAYS;
+      
+      while (placedCount < count && attempts < 100) {
+        attempts++;
+        const day = availDays[Math.floor(Math.random() * availDays.length)];
+        const p = Math.floor(Math.random() * periods) + 1;
+        
+        if (isTeacherBusy(teacher, day, p, grid)) {
+          conflictCount++;
+          continue;
+        }
+        
+        if (isClassBusy(lesson.klass, day, p, grid)) {
+          conflictCount++;
+          continue;
+        }
+        
+        grid[day][p].push({ ...lesson, patternType: 'flexible' });
+        if (lesson.isDouble && p + 1 <= periods) {
+          grid[day][p + 1].push({ ...lesson, isDoublePart: true, patternType: 'flexible' });
+        }
+        placedCount++;
+      }
+      
+      if (placedCount < count) {
+        const slot = findNextAvailableSlot(lesson, grid, periods);
+        if (slot) {
+          grid[slot.day][slot.period].push({ ...lesson, patternType: 'flexible' });
+          if (lesson.isDouble && slot.period + 1 <= periods) {
+            grid[slot.day][slot.period + 1].push({ ...lesson, isDoublePart: true, patternType: 'flexible' });
+          }
+          placedCount++;
+        }
+      }
+    }
+  }
+  
+  if (conflictCount > 0) {
+    showMessage(`⚠️ ${conflictCount} conflict(s) detected - moved to next available slots`, "warn");
+  }
+  
+  return { grid, unplaced: 0 };
+}
+
+function tryAssignOriginal(periods) {
+  const grid = {};
+  DAYS.forEach(d => {
+    grid[d] = {};
+    for (let p = 1; p <= periods; p++) grid[d][p] = [];
+  });
+  const teacherBusy = new Set();
+  const classBusy = new Set();
+  let unplaced = 0;
+  let conflictCount = 0;
+  
+  const lessons = [];
+  for (const e of entries) {
+    const perWeek = getLessonsPerWeek(e);
+    const mult = e.isDouble ? 2 : 1;
+    const availDays = e.days || DAYS;
+    for (let i = 0; i < perWeek * mult; i++) {
+      lessons.push({ ...e, requiresDouble: e.isDouble, availDays, locked: e.locked || false });
+    }
+  }
+  
+  lessons.sort((a, b) => {
+    if (a.priority === "heavy" && b.priority !== "heavy") return -1;
+    if (a.priority !== "heavy" && b.priority === "heavy") return 1;
+    return 0;
+  });
+  shuffle(lessons);
+  
+  for (const lesson of lessons) {
+    let placed = false;
+    const periodsToTry = range(1, periods);
+    shuffle(periodsToTry);
+    const daysToTry = shuffle([...lesson.availDays]);
+    
+    for (const day of daysToTry) {
+      if (placed) break;
+      for (const p of periodsToTry) {
+        if (lesson.requiresDouble && p + 1 > periods) continue;
+        
+        const tKey = `${lesson.teacher}|${day}|${p}`;
+        const cKey = `${lesson.klass}|${day}|${p}`;
+        
+        if (teacherBusy.has(tKey)) {
+          conflictCount++;
+          continue;
+        }
+        
+        if (classBusy.has(cKey)) {
+          conflictCount++;
+          continue;
+        }
+        
+        if (lesson.requiresDouble) {
+          const tKey2 = `${lesson.teacher}|${day}|${p + 1}`;
+          const cKey2 = `${lesson.klass}|${day}|${p + 1}`;
+          if (!teacherBusy.has(tKey2) && !classBusy.has(cKey2)) {
+            grid[day][p].push(lesson);
+            grid[day][p + 1].push({ ...lesson, isDoublePart: true });
+            teacherBusy.add(tKey);
+            teacherBusy.add(tKey2);
+            classBusy.add(cKey);
+            classBusy.add(cKey2);
+            placed = true;
+            break;
+          }
+        } else {
+          grid[day][p].push(lesson);
+          teacherBusy.add(tKey);
+          classBusy.add(cKey);
+          placed = true;
+          break;
+        }
+      }
+    }
+    if (!placed) unplaced++;
+  }
+  
+  if (conflictCount > 0) {
+    showMessage(`⚠️ ${conflictCount} conflict(s) detected - moved to next available slots`, "warn");
+  }
+  
+  return { grid, unplaced };
+}
+
+// ============================================
+// GENERATE
+// ============================================
+function generate() {
+  if (entries.length === 0) {
+    showMessage(t('fill-fields'), "error");
+    return;
+  }
+  
+  const locked = entries.filter(e => e.locked);
+  if (locked.length > 0) {
+    if (!confirm(`You have ${locked.length} locked entr${locked.length === 1 ? 'y' : 'ies'}. Generate will keep them fixed. Continue?`)) return;
+  }
+  
+  showLoading();
+  setTimeout(() => {
+    try {
+      const { periods, slots, lessonMinutes } = buildSlots();
+      const totalSlots = DAYS.length * periods;
+      
+      const load = {};
+      for (const e of entries) {
+        const perWeek = getLessonsPerWeek(e);
+        const mult = e.isDouble ? 2 : 1;
+        load["T:" + e.teacher] = (load["T:" + e.teacher] || 0) + perWeek * mult;
+        load["C:" + e.klass] = (load["C:" + e.klass] || 0) + perWeek * mult;
+      }
+      for (const key of Object.keys(load)) {
+        if (load[key] > totalSlots) {
+          const kind = key.startsWith("T:") ? "Teacher" : "Class";
+          showMessage(`${kind} "${key.slice(2)}" needs ${load[key]} slots, only ${totalSlots} available`, "error");
+          hideLoading();
+          return;
+        }
+      }
+      
+      let best = null;
+      const usePattern = document.getElementById("pattern-mode")?.checked || false;
+      
+      for (let attempt = 0; attempt < 300; attempt++) {
+        let result;
+        if (usePattern) {
+          result = tryAssignSmartPattern(periods);
+        } else {
+          result = tryAssignOriginal(periods);
+        }
+        if (result.unplaced === 0) { best = result; break; }
+        if (!best || result.unplaced < best.unplaced) best = result;
+      }
+      
+      if (!best) {
+        showMessage("Failed to generate timetable. Please adjust settings.", "error");
+        hideLoading();
+        return;
+      }
+      
+      schedule = { grid: best.grid, periods, slots, lessonMinutes, entries: entries };
+      activeView = "consolidated";
+      document.getElementById("output-panel").classList.remove("hidden");
+      
+      renderTimetables();
+      updateViewSelector();
+      
+      if (best.unplaced > 0) {
+        showMessage(`⚠️ ${best.unplaced} ${t('unplaced')}. Try increasing periods.`, "warn");
+      } else {
+        const modeText = usePattern ? ` (${t('smart-pattern')})` : "";
+        showMessage(`✅ ${t('done')} ${lessonMinutes}-minute timetable${modeText}`, "ok");
+      }
+      populateSubstitutionDropdowns();
+    } catch (e) {
+      showMessage("Error generating timetable: " + e.message, "error");
+      console.error(e);
+    }
+    finally { hideLoading(); }
+  }, 50);
+}
+
+// ============================================
+// GENERATE BUTTONS
+// ============================================
+document.getElementById("generate-btn-top")?.addEventListener("click", generate);
+document.getElementById("generate-btn-bottom")?.addEventListener("click", generate);
+document.getElementById("regenerate-btn")?.addEventListener("click", generate);
+
+function showLoading() {
+  document.getElementById("loading-overlay")?.classList.remove("hidden");
+}
+function hideLoading() {
+  document.getElementById("loading-overlay")?.classList.add("hidden");
+}
+
+// ============================================
+// VIEW MODE & SELECTOR
+// ============================================
+function setViewMode(mode) {
+  viewMode = mode;
+  document.querySelectorAll('.view-toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === mode);
+  });
+  if (schedule) renderTimetables();
+}
+window.setViewMode = setViewMode;
+
+document.getElementById("view-selector")?.addEventListener("change", function() {
+  activeView = this.value;
+  if (activeView === 'workload') {
+    showWorkloadSummary();
+    return;
+  }
+  if (schedule) {
+    renderTimetables();
+  }
+});
+
+// ============================================
+// PARSE VIEW
+// ============================================
+function parseView(val) {
+  if (val === "consolidated") return { type: "consolidated", name: null };
+  const i = val.indexOf(":");
+  if (i === -1) return { type: "consolidated", name: null };
+  return { type: val.slice(0, i), name: val.slice(i + 1) };
+}
+
+function lessonsAt(day, period, view) {
+  if (!schedule || !schedule.grid || !schedule.grid[day]) return [];
+  if (!schedule.grid[day][period]) return [];
+  if (view.type === "consolidated") return schedule.grid[day][period] || [];
+  return (schedule.grid[day][period] || []).filter(l =>
+    view.type === "teacher" ? l.teacher === view.name : l.klass === view.name
+  );
+}
+
+function checkClash(day, period, lesson) {
+  if (!schedule || !schedule.grid) return null;
+  const cellLessons = schedule.grid[day]?.[period] || [];
+  for (const existing of cellLessons) {
+    if (existing.teacher === lesson.teacher && existing.subject !== lesson.subject) {
+      return { type: 'teacher', teacher: lesson.teacher, subject: existing.subject };
+    }
+    if (existing.klass === lesson.klass && existing.subject !== lesson.subject) {
+      return { type: 'class', klass: lesson.klass, subject: existing.subject };
+    }
+  }
+  return null;
+}
+
+// ============================================
+// DELETE LESSON - WITH LOCK CHECK
+// ============================================
+function deleteLesson(day, period, lessonIndex) {
+  if (!schedule || !schedule.grid) return;
+  
+  const lesson = schedule.grid[day]?.[period]?.[lessonIndex];
+  if (!lesson) {
+    showMessage('Lesson not found', 'error');
+    return;
+  }
+  
+  if (lesson.locked || isLessonLocked(lesson)) {
+    showMessage(`🔒 ${lesson.subject} is locked. Unlock first.`, "warn");
+    return;
+  }
+  
+  const confirmMsg = t('delete-confirm')
+    .replace('{subject}', lesson.subject)
+    .replace('{day}', day)
+    .replace('{period}', period);
+  
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+  
+  schedule.grid[day][period].splice(lessonIndex, 1);
+  
+  if (lesson.isDoublePart) {
+    const pairedPeriod = period - 1;
+    if (schedule.grid[day][pairedPeriod]) {
+      schedule.grid[day][pairedPeriod] = schedule.grid[day][pairedPeriod].filter(l =>
+        !(l.teacher === lesson.teacher && l.subject === lesson.subject && l.klass === lesson.klass)
+      );
+    }
+  } else if (lesson.requiresDouble || lesson.isDouble) {
+    const pairedPeriod = period + 1;
+    if (schedule.grid[day][pairedPeriod]) {
+      schedule.grid[day][pairedPeriod] = schedule.grid[day][pairedPeriod].filter(l =>
+        !(l.teacher === lesson.teacher && l.subject === lesson.subject && l.klass === lesson.klass)
+      );
+    }
+  }
+  
+  showMessage(`✅ ${t('deleted')}: ${lesson.subject} from ${day} P${period}`, "ok");
+  renderTimetables();
+}
+window.deleteLesson = deleteLesson;
+
+// ============================================
+// BUILD CONSOLIDATED TABLE WITH CLASS TEACHER COLUMN
+// ============================================
+function buildConsolidatedTable() {
+  const block = document.createElement("div");
+  block.className = "timetable-block";
+
+  const title = document.createElement("div");
+  title.className = "timetable-title";
+  title.innerHTML = `<span class="avatar">📊</span> ${t('tab-timetable')} with Class Teachers`;
+  block.appendChild(title);
+
+  const scroll = document.createElement("div");
+  scroll.className = "table-scroll";
+  const table = document.createElement("table");
+  table.className = "timetable-grid";
+
+  // Get unique classes with their class teachers
+  const classTeacherData = {};
+  for (const entry of entries) {
+    if (!classTeacherData[entry.klass]) {
+      classTeacherData[entry.klass] = { classTeacher: '', coClassTeacher: '' };
+    }
+    if (entry.classTeacher) classTeacherData[entry.klass].classTeacher = entry.classTeacher;
+    if (entry.coClassTeacher) classTeacherData[entry.klass].coClassTeacher = entry.coClassTeacher;
+  }
+
+  // Header: Class Teacher, Class, then periods
+  let thead = "<thead><tr>";
+  thead += `<th style="min-width:100px;">Class Teacher</th>`;
+  thead += `<th style="min-width:70px;">Class</th>`;
+  for (const slot of schedule.slots) {
+    if (slot.period === "break") {
+      thead += `<th style="color:var(--text-light);font-size:0.7rem;">☕ ${t('break')}</th>`;
+    } else {
+      thead += `<th>P${slot.period}<br><span style="font-weight:400;color:var(--text-light);font-size:0.7rem;">${slot.start}</span></th>`;
+    }
+  }
+  thead += "</tr></thead>";
+  table.innerHTML = thead;
+
+  const tbody = document.createElement("tbody");
+  
+  for (const day of DAYS) {
+    // Get classes for this day
+    const classesOnDay = [];
+    for (const period in schedule.grid[day]) {
+      for (const lesson of schedule.grid[day][period]) {
+        if (!classesOnDay.includes(lesson.klass)) {
+          classesOnDay.push(lesson.klass);
+        }
+      }
+    }
+    classesOnDay.sort();
+    
+    if (classesOnDay.length === 0) {
+      const tr = document.createElement("tr");
+      const dayLabel = currentLang === 'hi' ? 
+        ({'Monday':'सोमवार','Tuesday':'मंगलवार','Wednesday':'बुधवार','Thursday':'गुरुवार','Friday':'शुक्रवार','Saturday':'शनिवार'}[day] || day) 
+        : day;
+      tr.innerHTML = `<td colspan="${schedule.slots.length + 2}" style="text-align:center;color:var(--text-light);padding:12px;">No classes on ${dayLabel}</td>`;
+      tbody.appendChild(tr);
+      continue;
+    }
+    
+    for (const klass of classesOnDay) {
+      const tr = document.createElement("tr");
+      const dayLabel = currentLang === 'hi' ? 
+        ({'Monday':'सोमवार','Tuesday':'मंगलवार','Wednesday':'बुधवार','Thursday':'गुरुवार','Friday':'शुक्रवार','Saturday':'शनिवार'}[day] || day) 
+        : day;
+      
+      const ctData = classTeacherData[klass] || { classTeacher: '', coClassTeacher: '' };
+      const ctDisplay = ctData.classTeacher ? ctData.classTeacher : '-';
+      const coCtDisplay = ctData.coClassTeacher ? ctData.coClassTeacher : '';
+      const teacherDisplay = coCtDisplay ? `${ctDisplay} (Co: ${coCtDisplay})` : ctDisplay;
+      
+      let cells = `<td class="class-teacher-col">${esc(teacherDisplay)}</td>`;
+      cells += `<td class="day-header" style="font-weight:700;">${klass}</td>`;
+      
+      for (const slot of schedule.slots) {
+        if (slot.period === "break") {
+          cells += `<td style="color:var(--text-light);font-size:0.8rem;">☕</td>`;
+        } else {
+          const lessons = schedule.grid[day][slot.period] || [];
+          const classLessons = lessons.filter(l => l.klass === klass);
+          const lessonData = { day, period: slot.period };
+          let cellContent = "";
+          
+          if (classLessons.length === 0) {
+            cellContent = `<span class="free-cell">${t('free')}</span>`;
+          } else {
+            const lessonHtml = classLessons.map((l, idx) => {
+              const isLast = idx === classLessons.length - 1;
+              const subjectColor = getSubjectColor(l.subject);
+              const isLocked = l.locked || isLessonLocked(l);
+              const lockIcon = isLocked ? '🔒' : '';
+              return `<div class="lesson-stack" style="${!isLast ? 'border-bottom:1px solid var(--border-light);' : ''}">
+                <span class="lesson-subject" style="color:${subjectColor};">${esc(l.subject)} ${lockIcon}</span>
+                <span class="lesson-meta">${esc(l.teacher)}</span>
+              </div>`;
+            }).join('');
+            
+            cellContent = `
+              <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+                ${lessonHtml}
+                <span class="drag-handle">⋮⋮</span>
+              </div>
+            `;
+          }
+          
+          const td = document.createElement("td");
+          td.className = "draggable-cell";
+          td.dataset.lesson = JSON.stringify(lessonData);
+          td.draggable = true;
+          td.innerHTML = cellContent;
+          cells += td.outerHTML;
+        }
+      }
+      
+      tr.innerHTML = cells;
+      tbody.appendChild(tr);
+    }
+  }
+
+  table.appendChild(tbody);
+  scroll.appendChild(table);
+  block.appendChild(scroll);
+  return block;
+}
+
+// ============================================
+// BUILD TEACHER OPTIMIZED TABLE
+// ============================================
+function buildTeacherOptimizedTable(view) {
+  const block = document.createElement("div");
+  block.className = "timetable-block";
+
+  const title = document.createElement("div");
+  title.className = "timetable-title";
+  const avatar = view.type === "teacher" ? `👩‍🏫` : `📚`;
+  const typeLabel = view.type === "teacher" ? "Teacher" : "Class";
+  const translatedType = currentLang === 'hi' ? (view.type === "teacher" ? 'शिक्षक' : 'कक्षा') : typeLabel;
+  title.innerHTML = `${avatar} ${translatedType}: ${esc(view.name)}`;
+  block.appendChild(title);
+
+  const scroll = document.createElement("div");
+  scroll.className = "table-scroll";
+  const table = document.createElement("table");
+  table.className = "timetable-grid";
+
+  let thead = "<thead><tr><th style='min-width:80px;'>" + t('monday').replace('Monday', 'Day') + "</th>";
+  for (const slot of schedule.slots) {
+    if (slot.period === "break") {
+      thead += `<th style="color:var(--text-light);font-size:0.7rem;">☕ ${t('break')}</th>`;
+    } else {
+      thead += `<th>P${slot.period}<br><span style="font-weight:400;color:var(--text-light);font-size:0.7rem;">${slot.start}</span></th>`;
+    }
+  }
+  thead += "</tr></thead>";
+  table.innerHTML = thead;
+
+  const tbody = document.createElement("tbody");
+  let patternDetected = false;
+  let flexibleDetected = false;
+  const patternData = {};
+
+  for (const day of DAYS) {
+    const tr = document.createElement("tr");
+    const dayLabel = currentLang === 'hi' ? 
+      ({'Monday':'सोमवार','Tuesday':'मंगलवार','Wednesday':'बुधवार','Thursday':'गुरुवार','Friday':'शुक्रवार','Saturday':'शनिवार'}[day] || day) 
+      : day;
+    let cells = `<td class="day-header">${dayLabel}</td>`;
+    let isConsistent = true;
+    let firstLessonKey = null;
+    let hasFlexible = false;
+    let periodLessons = [];
+
+    for (const slot of schedule.slots) {
+      if (slot.period === "break") {
+        cells += `<td style="color:var(--text-light);font-size:0.8rem;">☕</td>`;
+        continue;
+      }
+
+      const lessons = lessonsAt(day, slot.period, view);
+      const lessonData = { day, period: slot.period };
+      let cellContent = "";
+
+      if (lessons.length === 0) {
+        cellContent = `<span class="free-cell">${t('free')}</span>`;
+        isConsistent = false;
+      } else {
+        const l = lessons[0];
+        const lessonKey = `${l.subject}|${l.klass}`;
+        if (l.patternType === 'flexible') hasFlexible = true;
+        
+        if (!firstLessonKey) firstLessonKey = lessonKey;
+        else if (firstLessonKey !== lessonKey) isConsistent = false;
+        periodLessons.push(lessonKey);
+
+        const isLocked = l.locked || isLessonLocked(l);
+        
+        const lessonHtml = lessons.map((l, idx) => {
+          const isLast = idx === lessons.length - 1;
+          const displayClass = view.type === "teacher" ? l.klass : l.teacher;
+          const subjectColor = getSubjectColor(l.subject);
+          const lockIcon = isLocked ? '🔒' : '';
+          const isLockedClass = isLocked ? ' locked-cell' : '';
+          return `<div class="lesson-stack${isLockedClass}" style="${!isLast ? 'border-bottom:1px solid var(--border-light);' : ''}">
+            <span class="lesson-subject" style="color:${subjectColor};">${esc(l.subject)} ${lockIcon}</span>
+            <span class="lesson-meta">${esc(displayClass)}</span>
+            ${!isLocked ? `<button class="delete-lesson-btn" onclick="event.stopPropagation(); deleteLesson('${day}', ${slot.period}, ${idx})" title="${t('deleted')}">✖</button>` : ''}
+          </div>`;
+        }).join('');
+
+        cellContent = `
+          <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+            ${lessonHtml}
+            <span class="drag-handle">⋮⋮</span>
+          </div>
+        `;
+      }
+
+      const td = document.createElement("td");
+      td.className = "draggable-cell";
+      td.dataset.lesson = JSON.stringify(lessonData);
+      
+      const cellLessons = schedule.grid[day]?.[slot.period] || [];
+      const anyLocked = cellLessons.some(l => l.locked || isLessonLocked(l));
+      if (anyLocked) {
+        td.classList.add('locked-cell');
+        td.draggable = false;
+      } else {
+        td.draggable = true;
+      }
+      
+      if (lessons.length > 0 && view.type === "teacher") {
+        const clash = checkClash(day, slot.period, lessons[0]);
+        if (clash) {
+          td.classList.add('clash-cell');
+          cellContent += `<span class="clash-icon">⚠️</span>`;
+        }
+      }
+
+      td.innerHTML = cellContent;
+      cells += td.outerHTML;
+    }
+
+    const nonBreakSlots = schedule.slots.filter(s => s.period !== "break");
+    if (isConsistent && firstLessonKey && periodLessons.length === nonBreakSlots.length) {
+      if (hasFlexible) {
+        tr.className = "flexible-highlight";
+        flexibleDetected = true;
+      } else {
+        tr.className = "pattern-highlight";
+        patternDetected = true;
+        nonBreakSlots.forEach((s, idx) => {
+          if (periodLessons[idx]) {
+            patternData[s.period] = periodLessons[idx];
+          }
+        });
+      }
+      
+      const firstCell = tr.querySelector("td:first-child");
+      if (firstCell) {
+        const badgeText = hasFlexible ? t('flexible') : t('daily');
+        firstCell.innerHTML += `<div class="${hasFlexible ? 'flexible-badge' : 'pattern-badge'}">📅 ${badgeText}</div>`;
+      }
+    }
+
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  }
+
+  table.appendChild(tbody);
+  scroll.appendChild(table);
+  block.appendChild(scroll);
+
+  if ((patternDetected || flexibleDetected) && view.type === "teacher") {
+    const summary = document.createElement("div");
+    summary.className = "pattern-summary";
+    let summaryText = '';
+    if (patternDetected) {
+      const patternText = [];
+      for (const [period, key] of Object.entries(patternData)) {
+        const parts = key.split('|');
+        const subject = parts[0] || 'Unknown';
+        const klass = parts[1] || 'Unknown';
+        patternText.push(`P${period}: ${subject} (${klass})`);
+      }
+      summaryText += `✅ <strong>${t('pattern-detected')}:</strong> ${t('consistent-lessons')}<br>`;
+      summaryText += `<span style="font-size:0.8rem;color:var(--text-muted);">${patternText.join(' | ')}</span>`;
+    }
+    if (flexibleDetected) {
+      if (patternDetected) summaryText += '<br><br>';
+      summaryText += `🔄 <strong>${t('flexible-lessons')}</strong>`;
+    }
+    summary.innerHTML = summaryText;
+    block.appendChild(summary);
+  }
+
+  return block;
+}
+
+// ============================================
+// RENDER TIMETABLES
+// ============================================
+function renderTimetables() {
+  const container = document.getElementById("timetable-container");
+  if (!container || !schedule) return;
+  container.innerHTML = "";
+  
+  const view = parseView(activeView);
+  
+  if (isMobile && mobileView !== 'full') {
+    renderMobileTimetable(container, view);
+  } else {
+    if (view.type === "consolidated") {
+      container.appendChild(buildConsolidatedTable());
+    } else if (view.type === "teacher" || view.type === "class") {
+      container.appendChild(buildTeacherOptimizedTable(view));
+    }
+  }
+  
+  const hint = document.createElement('div');
+  hint.className = 'drag-info';
+  const modeLabel = dragMode === 'swap' ? t('swap-mode') : t('move-mode');
+  hint.innerHTML = t('drag-hint').replace('{mode}', `<strong>${modeLabel}</strong>`);
+  container.appendChild(hint);
+}
+
+// ============================================
+// RENDER MOBILE TIMETABLE
+// ============================================
+function renderMobileTimetable(container, view) {
+  const daysToShow = mobileView === 'today' ? [getTodayName()] : 
+                     mobileView === 'tomorrow' ? [getTomorrowName()] : 
+                     DAYS;
+  
+  const filteredGrid = {};
+  for (const day of daysToShow) {
+    if (schedule.grid[day]) {
+      filteredGrid[day] = schedule.grid[day];
+    }
+  }
+  
+  const block = document.createElement("div");
+  block.className = "timetable-block";
+  
+  const title = document.createElement("div");
+  title.className = "timetable-title";
+  title.innerHTML = `<span class="avatar">📱</span> ${mobileView === 'today' ? 'Today' : mobileView === 'tomorrow' ? 'Tomorrow' : 'Full Week'}`;
+  block.appendChild(title);
+  
+  const scroll = document.createElement("div");
+  scroll.className = "table-scroll";
+  const table = document.createElement("table");
+  table.className = "timetable-grid";
+  
+  let thead = "<thead><tr><th style='min-width:70px;'>Time</th>";
+  for (const day of daysToShow) {
+    thead += `<th style="min-width:60px;font-size:0.7rem;">${day.substring(0,3)}</th>`;
+  }
+  thead += "</tr></thead>";
+  table.innerHTML = thead;
+  
+  const tbody = document.createElement("tbody");
+  for (const slot of schedule.slots) {
+    if (slot.period === "break") {
+      const tr = document.createElement("tr");
+      tr.className = "break-row";
+      tr.innerHTML = `<td colspan="${daysToShow.length + 1}" style="text-align:center;padding:8px;font-size:0.7rem;">☕ Break</td>`;
+      tbody.appendChild(tr);
+      continue;
+    }
+    
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td style="font-size:0.65rem;font-weight:600;">${slot.start}</td>`;
+    
+    for (const day of daysToShow) {
+      const lessons = filteredGrid[day]?.[slot.period] || [];
+      if (lessons.length === 0) {
+        tr.innerHTML += `<td style="color:var(--text-light);font-size:0.6rem;">—</td>`;
+      } else {
+        const l = lessons[0];
+        const subjectColor = getSubjectColor(l.subject);
+        const isLocked = l.locked || isLessonLocked(l);
+        const lockIcon = isLocked ? '🔒' : '';
+        tr.innerHTML += `<td style="font-size:0.65rem;">
+          <span style="color:${subjectColor};font-weight:700;">${esc(l.subject)}</span>
+          <span style="font-size:0.55rem;color:var(--text-muted);display:block;">${esc(l.klass)}</span>
+          ${lockIcon}
+        </td>`;
+      }
+    }
+    tbody.appendChild(tr);
+  }
+  
+  table.appendChild(tbody);
+  scroll.appendChild(table);
+  block.appendChild(scroll);
+  container.appendChild(block);
+}
+
+function getTodayName() {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[new Date().getDay()];
+}
+
+function getTomorrowName() {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[(new Date().getDay() + 1) % 7];
+}
+
+// ============================================
+// MOBILE FUNCTIONS
+// ============================================
+function showToday() {
+  mobileView = 'today';
+  if (schedule) renderTimetables();
+  document.querySelector('.mobile-badge').textContent = '📱 Today\'s Schedule';
+}
+window.showToday = showToday;
+
+function showTomorrow() {
+  mobileView = 'tomorrow';
+  if (schedule) renderTimetables();
+  document.querySelector('.mobile-badge').textContent = '📱 Tomorrow\'s Schedule';
+}
+window.showTomorrow = showTomorrow;
+
+function showFullWeek() {
+  mobileView = 'full';
+  if (schedule) renderTimetables();
+  document.querySelector('.mobile-badge').textContent = '📱 Full Week';
+}
+window.showFullWeek = showFullWeek;
+
+function shareSchedule() {
+  const url = window.location.href;
+  if (navigator.share) {
+    navigator.share({
+      title: 'My Timetable',
+      text: 'Check my timetable',
+      url: url
+    });
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      showMessage('Link copied to clipboard!', 'ok');
+    }).catch(() => {
+      prompt('Copy this link:', url);
+    });
+  }
+}
+window.shareSchedule = shareSchedule;
+
+// ============================================
+// EXPORT TO GOOGLE SHEETS
+// ============================================
+function exportToGoogleSheets() {
+  if (!schedule) {
+    showMessage('Generate timetable first', 'error');
+    return;
+  }
+  
+  const data = [];
+  const headers = ['Class Teacher', 'Co-Class Teacher', 'Class', 'Day', 'Period', 'Time', 'Teacher', 'Subject', 'Locked'];
+  data.push(headers);
+  
+  // Get class teacher info
+  const classTeacherInfo = {};
+  for (const entry of entries) {
+    if (!classTeacherInfo[entry.klass]) {
+      classTeacherInfo[entry.klass] = { classTeacher: '', coClassTeacher: '' };
+    }
+    if (entry.classTeacher) classTeacherInfo[entry.klass].classTeacher = entry.classTeacher;
+    if (entry.coClassTeacher) classTeacherInfo[entry.klass].coClassTeacher = entry.coClassTeacher;
+  }
+  
+  for (const day of DAYS) {
+    for (const period in schedule.grid[day]) {
+      for (const lesson of schedule.grid[day][period]) {
+        const slot = schedule.slots.find(s => s.period === parseInt(period));
+        const ctInfo = classTeacherInfo[lesson.klass] || { classTeacher: '', coClassTeacher: '' };
+        data.push([
+          ctInfo.classTeacher || '-',
+          ctInfo.coClassTeacher || '-',
+          lesson.klass,
+          day,
+          `P${period}`,
+          slot ? `${slot.start}-${slot.end}` : '',
+          lesson.teacher,
+          lesson.subject,
+          lesson.locked || isLessonLocked(lesson) ? 'Yes' : 'No'
+        ]);
+      }
+    }
+  }
+  
+  const csvContent = data.map(row => row.join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `timetable_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showMessage('📊 CSV exported! Import to Google Sheets.', 'ok');
+  
+  setTimeout(() => {
+    alert(
+      '📊 Google Sheets Export\n\n' +
+      '1. Go to sheets.google.com\n' +
+      '2. Create a new spreadsheet\n' +
+      '3. Click File → Import\n' +
+      '4. Upload the downloaded CSV file\n' +
+      '5. Select "Replace current sheet"\n\n' +
+      'Your timetable data is now in Google Sheets!'
+    );
+  }, 500);
+}
+window.exportToGoogleSheets = exportToGoogleSheets;
+
+// ============================================
+// WORKLOAD SUMMARY
+// ============================================
+function showWorkloadSummary() {
+  if (!schedule) {
+    showMessage(t('generate-first'), "error");
+    return;
+  }
+  
+  const teacherPeriods = new Map();
+  for (const day of DAYS) {
+    for (const period in schedule.grid[day]) {
+      for (const lesson of schedule.grid[day][period]) {
+        teacherPeriods.set(lesson.teacher, (teacherPeriods.get(lesson.teacher) || 0) + 1);
+      }
+    }
+  }
+  
+  let html = `
+    <div class="summary-overlay" id="summary-overlay" onclick="if(event.target===this)this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:3000;padding:20px;">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:650px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.15);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3 style="color:var(--text);font-size:1.1rem;">📊 ${t('workload-btn')}</h3>
+          <button onclick="this.closest('.summary-overlay').remove()" style="background:none;border:none;color:var(--text);font-size:1.5rem;cursor:pointer;">×</button>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+          <thead><tr style="border-bottom:2px solid var(--border);">
+            <th style="text-align:left;padding:8px;color:var(--text-secondary);">${t('entries-title')}</th>
+            <th style="text-align:center;padding:8px;color:var(--text-secondary);">Periods</th>
+            <th style="text-align:center;padding:8px;color:var(--text-secondary);">Daily Avg</th>
+            <th style="text-align:center;padding:8px;color:var(--text-secondary);">Locked</th>
+            <th style="text-align:center;padding:8px;color:var(--text-secondary);">Type</th>
+          </tr></thead>
+          <tbody>
+  `;
+  const sorted = Array.from(teacherPeriods.keys()).sort();
+  for (const teacher of sorted) {
+    const total = teacherPeriods.get(teacher);
+    const avg = (total / 6).toFixed(1);
+    const lockedCount = entries.filter(e => e.teacher === teacher && e.locked).length;
+    const patternType = total >= 30 ? '🔒 Fixed' : total <= 12 ? '🔄 Flex' : '🔓 Mixed';
+    html += `<tr><td style="padding:8px;">${esc(teacher)}</td><td style="text-align:center;">${total}</td><td style="text-align:center;">${avg}</td><td style="text-align:center;">${lockedCount}</td><td style="text-align:center;">${patternType}</td></tr>`;
+  }
+  const grandTotal = Array.from(teacherPeriods.values()).reduce((a, b) => a + b, 0);
+  html += `
+          </tbody>
+          <tfoot><tr style="border-top:2px solid var(--border);font-weight:700;">
+            <td style="padding:8px;">Total</td>
+            <td style="text-align:center;">${grandTotal}</td>
+            <td style="text-align:center;">${(grandTotal / 6).toFixed(1)}</td>
+            <td style="text-align:center;"></td>
+            <td style="text-align:center;"></td>
+          </tr></tfoot>
+        </table>
+        <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+          <button onclick="this.closest('.summary-overlay').remove()" class="btn ghost">Close</button>
+          <button onclick="exportWorkloadExcel()" class="btn primary">📊 Export</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML("beforeend", html);
+}
+window.showWorkloadSummary = showWorkloadSummary;
+
+function exportWorkloadExcel() {
+  if (!schedule) return;
+  const teacherPeriods = new Map();
+  for (const day of DAYS) {
+    for (const period in schedule.grid[day]) {
+      for (const lesson of schedule.grid[day][period]) {
+        teacherPeriods.set(lesson.teacher, (teacherPeriods.get(lesson.teacher) || 0) + 1);
+      }
+    }
+  }
+  const data = [["Teacher", "Total Periods (6 days)", "Daily Average", "Locked Lessons", "Pattern Type"]];
+  const sorted = Array.from(teacherPeriods.keys()).sort();
+  for (const teacher of sorted) {
+    const total = teacherPeriods.get(teacher);
+    const avg = (total / 6).toFixed(1);
+    const lockedCount = entries.filter(e => e.teacher === teacher && e.locked).length;
+    const patternType = total >= 30 ? 'Fixed' : total <= 12 ? 'Flexible' : 'Mixed';
+    data.push([teacher, total, avg, lockedCount, patternType]);
+  }
+  data.push(["", "", "", "", ""]);
+  data.push(["GRAND TOTAL", Array.from(teacherPeriods.values()).reduce((a, b) => a + b, 0), "", "", ""]);
+  
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Teacher_Workload");
+  XLSX.writeFile(wb, `workload_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  showMessage("Workload exported!", "ok");
+}
+window.exportWorkloadExcel = exportWorkloadExcel;
+
+// ============================================
+// DRAG AND DROP WITH LOCK CHECK
+// ============================================
+function initDragDrop() {
+  document.addEventListener('dragstart', function(e) {
+    const cell = e.target.closest('.draggable-cell');
+    if (!cell) return;
+    
+    if (cell.classList.contains('locked-cell')) {
+      e.preventDefault();
+      showMessage('🔒 This cell is locked and cannot be moved', 'warn');
+      return;
+    }
+    
+    const data = cell.dataset.lesson;
+    if (!data) return;
+    try {
+      dragData = JSON.parse(data);
+      dragSource = cell;
+      cell.classList.add('drag-source');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', data);
+    } catch (err) { console.warn('Drag start error:', err); }
+  });
+
+  document.addEventListener('dragend', function(e) {
+    if (dragSource) dragSource.classList.remove('drag-source');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  });
+
+  document.addEventListener('dragover', function(e) {
+    const cell = e.target.closest('.draggable-cell');
+    if (cell) {
+      if (cell.classList.contains('locked-cell')) {
+        e.preventDefault();
+        cell.classList.add('drag-over');
+        return;
+      }
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      cell.classList.add('drag-over');
+    }
+  });
+
+  document.addEventListener('dragleave', function(e) {
+    const cell = e.target.closest('.draggable-cell');
+    if (cell) cell.classList.remove('drag-over');
+  });
+
+  document.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const targetCell = e.target.closest('.draggable-cell');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    if (dragSource) dragSource.classList.remove('drag-source');
+
+    if (!targetCell || !dragSource) return;
+    if (targetCell === dragSource) return;
+    
+    if (targetCell.classList.contains('locked-cell')) {
+      showMessage('🔒 Target cell is locked', 'warn');
+      dragSource = null;
+      dragData = null;
+      return;
+    }
+
+    const targetData = targetCell.dataset.lesson;
+    if (!targetData) return;
+
+    try {
+      const sourceInfo = dragData;
+      const targetInfo = JSON.parse(targetData);
+
+      const sourceDay = sourceInfo.day;
+      const sourcePeriod = sourceInfo.period;
+      const targetDay = targetInfo.day;
+      const targetPeriod = targetInfo.period;
+
+      if (!schedule || !schedule.grid) return;
+
+      const sourceLessons = schedule.grid[sourceDay]?.[sourcePeriod] || [];
+      if (sourceLessons.length === 0) {
+        showMessage('Source cell is empty', 'warn');
+        dragSource = null;
+        dragData = null;
+        return;
+      }
+      const sourceLesson = sourceLessons[0];
+      
+      if (sourceLesson.locked || isLessonLocked(sourceLesson)) {
+        showMessage(`🔒 ${sourceLesson.subject} is locked and cannot be moved`, 'warn');
+        dragSource = null;
+        dragData = null;
+        return;
+      }
+
+      const targetLessons = schedule.grid[targetDay]?.[targetPeriod] || [];
+
+      const teacherBusy = targetLessons.some(l => l.teacher === sourceLesson.teacher);
+      if (teacherBusy && (sourceDay !== targetDay || sourcePeriod !== targetPeriod)) {
+        const conflictMsg = `⚠️ ${sourceLesson.teacher} is already teaching at ${targetDay} P${targetPeriod}!`;
+        showMessage(conflictMsg, 'clash');
+        if (!confirm(`${conflictMsg}\n\nWould you like to swap with the existing lesson?`)) {
+          dragSource = null;
+          dragData = null;
+          return;
+        }
+        if (targetLessons.length === 0) {
+          showMessage('Target cell is empty, cannot swap', 'error');
+          dragSource = null;
+          dragData = null;
+          return;
+        }
+        const targetLesson = targetLessons[0];
+        if (targetLesson.locked || isLessonLocked(targetLesson)) {
+          showMessage(`🔒 Target lesson is locked, cannot swap`, 'warn');
+          dragSource = null;
+          dragData = null;
+          return;
+        }
+        schedule.grid[sourceDay][sourcePeriod] = schedule.grid[sourceDay][sourcePeriod].filter(l =>
+          l.teacher !== sourceLesson.teacher || l.subject !== sourceLesson.subject || l.klass !== sourceLesson.klass
+        );
+        schedule.grid[targetDay][targetPeriod] = schedule.grid[targetDay][targetPeriod].filter(l =>
+          l.teacher !== targetLesson.teacher || l.subject !== targetLesson.subject || l.klass !== targetLesson.klass
+        );
+        schedule.grid[sourceDay][sourcePeriod].push(targetLesson);
+        schedule.grid[targetDay][targetPeriod].push(sourceLesson);
+        showMessage(`✅ ${t('swapped')}: ${sourceLesson.subject} ↔ ${targetLesson.subject}`, "ok");
+        renderTimetables();
+        dragSource = null;
+        dragData = null;
+        return;
+      }
+
+      const classBusy = targetLessons.some(l => l.klass === sourceLesson.klass);
+      if (classBusy && (sourceDay !== targetDay || sourcePeriod !== targetPeriod)) {
+        const conflictMsg = `⚠️ Class ${sourceLesson.klass} already has a lesson at ${targetDay} P${targetPeriod}!`;
+        showMessage(conflictMsg, 'clash');
+        if (!confirm(`${conflictMsg}\n\nWould you like to swap with the existing lesson?`)) {
+          dragSource = null;
+          dragData = null;
+          return;
+        }
+        if (targetLessons.length === 0) {
+          showMessage('Target cell is empty, cannot swap', 'error');
+          dragSource = null;
+          dragData = null;
+          return;
+        }
+        const targetLesson = targetLessons[0];
+        if (targetLesson.locked || isLessonLocked(targetLesson)) {
+          showMessage(`🔒 Target lesson is locked, cannot swap`, 'warn');
+          dragSource = null;
+          dragData = null;
+          return;
+        }
+        schedule.grid[sourceDay][sourcePeriod] = schedule.grid[sourceDay][sourcePeriod].filter(l =>
+          l.teacher !== sourceLesson.teacher || l.subject !== sourceLesson.subject || l.klass !== sourceLesson.klass
+        );
+        schedule.grid[targetDay][targetPeriod] = schedule.grid[targetDay][targetPeriod].filter(l =>
+          l.teacher !== targetLesson.teacher || l.subject !== targetLesson.subject || l.klass !== targetLesson.klass
+        );
+        schedule.grid[sourceDay][sourcePeriod].push(targetLesson);
+        schedule.grid[targetDay][targetPeriod].push(sourceLesson);
+        showMessage(`✅ ${t('swapped')}: ${sourceLesson.subject} ↔ ${targetLesson.subject}`, "ok");
+        renderTimetables();
+        dragSource = null;
+        dragData = null;
+        return;
+      }
+
+      const isShiftPressed = e.shiftKey;
+      const effectiveMode = isShiftPressed ? 'swap' : dragMode;
+
+      if (effectiveMode === 'move') {
+        schedule.grid[sourceDay][sourcePeriod] = schedule.grid[sourceDay][sourcePeriod].filter(l =>
+          l.teacher !== sourceLesson.teacher || l.subject !== sourceLesson.subject || l.klass !== sourceLesson.klass
+        );
+
+        const alreadyExists = schedule.grid[targetDay][targetPeriod].some(l =>
+          l.teacher === sourceLesson.teacher &&
+          l.subject === sourceLesson.subject &&
+          l.klass === sourceLesson.klass
+        );
+
+        if (!alreadyExists) {
+          schedule.grid[targetDay][targetPeriod].push(sourceLesson);
+          showMessage(`✅ ${t('moved')}: ${sourceLesson.subject} → ${targetDay} P${targetPeriod}`, "ok");
+        } else {
+          showMessage(`ℹ️ ${sourceLesson.subject} already exists in target`, "warn");
+        }
+      } else {
+        if (targetLessons.length === 0) {
+          schedule.grid[sourceDay][sourcePeriod] = schedule.grid[sourceDay][sourcePeriod].filter(l =>
+            l.teacher !== sourceLesson.teacher || l.subject !== sourceLesson.subject || l.klass !== sourceLesson.klass
+          );
+          schedule.grid[targetDay][targetPeriod].push(sourceLesson);
+          showMessage(`✅ ${t('moved')}: ${sourceLesson.subject} → ${targetDay} P${targetPeriod}`, "ok");
+        } else {
+          const targetLesson = targetLessons[0];
+          if (targetLesson.locked || isLessonLocked(targetLesson)) {
+            showMessage(`🔒 Target lesson is locked, cannot swap`, 'warn');
+            dragSource = null;
+            dragData = null;
+            return;
+          }
+          schedule.grid[sourceDay][sourcePeriod] = schedule.grid[sourceDay][sourcePeriod].filter(l =>
+            l.teacher !== sourceLesson.teacher || l.subject !== sourceLesson.subject || l.klass !== sourceLesson.klass
+          );
+          schedule.grid[targetDay][targetPeriod] = schedule.grid[targetDay][targetPeriod].filter(l =>
+            l.teacher !== targetLesson.teacher || l.subject !== targetLesson.subject || l.klass !== targetLesson.klass
+          );
+          schedule.grid[sourceDay][sourcePeriod].push(targetLesson);
+          schedule.grid[targetDay][targetPeriod].push(sourceLesson);
+          showMessage(`✅ ${t('swapped')}: ${sourceLesson.subject} ↔ ${targetLesson.subject}`, "ok");
+        }
+      }
+
+      renderTimetables();
+
+    } catch (err) {
+      console.warn('Drop error:', err);
+      showMessage('Could not complete action', 'error');
+    }
+
+    dragSource = null;
+    dragData = null;
+  });
+}
+
+// ============================================
+// MOBILE DETECTION
+// ============================================
+function detectMobile() {
+  isMobile = /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(navigator.userAgent) || window.innerWidth < 768;
+  
+  if (isMobile) {
+    document.getElementById('mobileBadge').style.display = 'block';
+    document.getElementById('mobileNav').style.display = 'flex';
+    
+    document.querySelector('.settings-grid').style.display = 'none';
+    document.querySelector('#entry-form').style.display = 'none';
+    document.querySelector('#teacher-list-wrap').style.display = 'none';
+    document.querySelector('.generate-row').style.display = 'none';
+    
+    const today = new Date().toLocaleDateString('en-IN', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    document.querySelector('.hero p').textContent = `📅 ${today}`;
+    document.querySelector('.hero .badge').textContent = '📱 Mobile View';
+    
+    if (schedule) {
+      document.getElementById('output-panel').classList.remove('hidden');
+      showToday();
+    }
+  }
+}
+
+// ============================================
+// EXPORT FUNCTIONS
+// ============================================
+function exportData() {
+  const data = JSON.stringify({ entries, exportDate: new Date().toISOString() }, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `timetable_backup_${new Date().toISOString().slice(0, 19)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showMessage("Exported!", "ok");
+}
+window.exportData = exportData;
+
+document.getElementById("import-btn")?.addEventListener("click", () => {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.entries) {
+            entries = data.entries;
+            entries.forEach(e => {
+              if (!e.classTeacher) e.classTeacher = '';
+              if (!e.coClassTeacher) e.coClassTeacher = '';
+            });
+            renderList();
+            saveToLocalStorage();
+            schedule = null;
+            document.getElementById("output-panel")?.classList.add("hidden");
+            showMessage(`Imported ${entries.length} entries`, "ok");
+          }
+        } catch (e) {
+          showMessage("Invalid file", "error");
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+  input.click();
+});
+
+// ============================================
+// EXCEL EXPORT WITH CLASS TEACHER COLUMN
+// ============================================
+document.getElementById("excel-btn")?.addEventListener("click", () => {
+  if (!schedule) {
+    showMessage(t('generate-first'), "error");
+    return;
+  }
+  
+  const wb = XLSX.utils.book_new();
+  
+  const classTeacherInfo = {};
+  for (const entry of entries) {
+    if (!classTeacherInfo[entry.klass]) {
+      classTeacherInfo[entry.klass] = { classTeacher: '', coClassTeacher: '' };
+    }
+    if (entry.classTeacher) classTeacherInfo[entry.klass].classTeacher = entry.classTeacher;
+    if (entry.coClassTeacher) classTeacherInfo[entry.klass].coClassTeacher = entry.coClassTeacher;
+  }
+  
+  const headers = ["Class Teacher", "Co-Class Teacher", "Class", "Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period} ${s.start}`)];
+  const consData = [headers];
+  
+  for (const day of DAYS) {
+    const classesOnDay = [];
+    for (const period in schedule.grid[day]) {
+      for (const lesson of schedule.grid[day][period]) {
+        if (!classesOnDay.includes(lesson.klass)) {
+          classesOnDay.push(lesson.klass);
+        }
+      }
+    }
+    classesOnDay.sort();
+    
+    for (const klass of classesOnDay) {
+      const ctInfo = classTeacherInfo[klass] || { classTeacher: '', coClassTeacher: '' };
+      const row = [ctInfo.classTeacher || '-', ctInfo.coClassTeacher || '-', klass, day];
+      for (const slot of schedule.slots) {
+        if (slot.period === "break") {
+          row.push("BREAK");
+        } else {
+          const lessons = schedule.grid[day][slot.period] || [];
+          const classLessons = lessons.filter(l => l.klass === klass);
+          if (classLessons.length === 0) {
+            row.push("-");
+          } else {
+            row.push(classLessons.map(l => {
+              const locked = l.locked || isLessonLocked(l);
+              return `${l.subject} (${l.teacher})${locked ? ' 🔒' : ''}`;
+            }).join("; "));
+          }
+        }
+      }
+      consData.push(row);
+    }
+  }
+  const consSheet = XLSX.utils.aoa_to_sheet(consData);
+  XLSX.utils.book_append_sheet(wb, consSheet, "Class Schedule");
+  
+  const teachers = [...new Set(entries.map(e => e.teacher))];
+  for (const teacher of teachers) {
+    const view = { type: "teacher", name: teacher };
+    const data = [["Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period} ${s.start}`)]];
+    for (const day of DAYS) {
+      const row = [day];
+      for (const slot of schedule.slots) {
+        if (slot.period === "break") {
+          row.push("BREAK");
+        } else {
+          const lessons = lessonsAt(day, slot.period, view);
+          if (lessons.length === 0) {
+            row.push("-");
+          } else {
+            row.push(lessons.map(l => {
+              const locked = l.locked || isLessonLocked(l);
+              return `${l.subject} (${l.klass})${locked ? ' 🔒' : ''}`;
+            }).join("; "));
+          }
+        }
+      }
+      data.push(row);
+    }
+    const sheet = XLSX.utils.aoa_to_sheet(data);
+    const name = teacher.replace(/[\\/*?:[\]]/g, "").substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, sheet, name);
+  }
+  
+  XLSX.writeFile(wb, `timetable_${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.xlsx`);
+  showMessage("Excel downloaded!", "ok");
+});
+
+// ============================================
+// PDF EXPORT WITH CLASS TEACHER COLUMN
+// ============================================
+document.getElementById("pdf-btn")?.addEventListener("click", () => {
+  if (!schedule) {
+    showMessage(t('generate-first'), "error");
+    return;
+  }
+  
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  
+  const classTeacherInfo = {};
+  for (const entry of entries) {
+    if (!classTeacherInfo[entry.klass]) {
+      classTeacherInfo[entry.klass] = { classTeacher: '', coClassTeacher: '' };
+    }
+    if (entry.classTeacher) classTeacherInfo[entry.klass].classTeacher = entry.classTeacher;
+    if (entry.coClassTeacher) classTeacherInfo[entry.klass].coClassTeacher = entry.coClassTeacher;
+  }
+  
+  const headers = ["Class Teacher", "Co-Class Teacher", "Class", "Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period}`)];
+  const consData = [headers];
+  
+  for (const day of DAYS) {
+    const classesOnDay = [];
+    for (const period in schedule.grid[day]) {
+      for (const lesson of schedule.grid[day][period]) {
+        if (!classesOnDay.includes(lesson.klass)) {
+          classesOnDay.push(lesson.klass);
+        }
+      }
+    }
+    classesOnDay.sort();
+    
+    for (const klass of classesOnDay) {
+      const ctInfo = classTeacherInfo[klass] || { classTeacher: '', coClassTeacher: '' };
+      const row = [ctInfo.classTeacher || '-', ctInfo.coClassTeacher || '-', klass, day];
+      for (const slot of schedule.slots) {
+        if (slot.period === "break") {
+          row.push("Break");
+        } else {
+          const lessons = schedule.grid[day][slot.period] || [];
+          const classLessons = lessons.filter(l => l.klass === klass);
+          if (classLessons.length === 0) {
+            row.push("-");
+          } else {
+            row.push(classLessons.map(l => `${l.subject}(${l.teacher})`).join(";"));
+          }
+        }
+      }
+      consData.push(row);
+    }
+  }
+  
+  doc.autoTable({ 
+    head: [consData[0]], 
+    body: consData.slice(1), 
+    startY: 30, 
+    styles: { fontSize: 6 },
+    headStyles: { fillColor: [74, 108, 247] }
+  });
+  
+  const teachers = [...new Set(entries.map(e => e.teacher))];
+  for (const teacher of teachers) {
+    doc.addPage();
+    doc.setFontSize(12);
+    doc.text(`Teacher: ${teacher}`, 40, 30);
+    
+    const view = { type: "teacher", name: teacher };
+    const data = [["Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period}`)]];
+    for (const day of DAYS) {
+      const row = [day];
+      for (const slot of schedule.slots) {
+        if (slot.period === "break") {
+          row.push("Break");
+        } else {
+          const lessons = lessonsAt(day, slot.period, view);
+          if (lessons.length === 0) {
+            row.push("-");
+          } else {
+            row.push(lessons.map(l => `${l.subject}(${l.klass})`).join(";"));
+          }
+        }
+      }
+      data.push(row);
+    }
+    doc.autoTable({ 
+      head: [data[0]], 
+      body: data.slice(1), 
+      startY: 40, 
+      styles: { fontSize: 7 } 
+    });
+  }
+  
+  doc.save("timetable.pdf");
+});
+
+// ============================================
+// PRINT
+// ============================================
+document.getElementById("print-btn")?.addEventListener("click", () => window.print());
+
+// ============================================
+// SUBSTITUTION MANAGER
+// ============================================
+function getAllTeachers() {
+  return [...new Set(entries.map(e => e.teacher))];
+}
+
+function populateSubstitutionDropdowns() {
+  const teachers = getAllTeachers();
+  
+  const locateSelect = document.getElementById("sub-teacher-select");
+  if (locateSelect) {
+    locateSelect.innerHTML = '<option value="">-- Select a teacher --</option>';
+    teachers.forEach(t => locateSelect.innerHTML += `<option value="${esc(t)}">${esc(t)}</option>`);
+  }
+  
+  const absentSelect = document.getElementById("absent-teacher-select");
+  if (absentSelect) {
+    absentSelect.innerHTML = '<option value="">-- Select absent teacher --</option>';
+    teachers.forEach(t => absentSelect.innerHTML += `<option value="${esc(t)}">${esc(t)}</option>`);
+  }
+}
+
+function displayTeacherScheduleSub(teacher) {
+  const container = document.getElementById("sub-teacher-grid");
+  if (!container || !schedule) return;
+  
+  const lessons = [];
+  for (const day of DAYS) {
+    if (!schedule?.grid?.[day]) continue;
+    for (const period in schedule.grid[day]) {
+      for (const l of schedule.grid[day][period]) {
+        if (l.teacher === teacher) {
+          lessons.push({ day, period: parseInt(period), subject: l.subject, klass: l.klass, patternType: l.patternType });
+        }
+      }
+    }
+  }
+  
+  if (lessons.length === 0) {
+    container.innerHTML = `<div style='text-align:center;padding:20px;color:var(--text-light);font-size:0.9rem;'>${t('no-lessons')}</div>`;
+    return;
+  }
+  
+  const byDay = {};
+  for (const day of DAYS) {
+    byDay[day] = lessons.filter(l => l.day === day).sort((a, b) => a.period - b.period);
+  }
+  
+  const slots = schedule.slots.filter(s => s.period !== "break");
+  let html = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.8rem;border:1px solid var(--border);">';
+  html += '<thead><tr><th style="padding:6px 8px;border:1px solid var(--border);">Time</th>';
+  for (const day of DAYS) {
+    html += `<th style="padding:6px 8px;border:1px solid var(--border);">${day}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+  
+  for (const slot of slots) {
+    html += `<tr><td style="padding:6px 8px;border:1px solid var(--border);font-weight:600;font-size:0.7rem;">${slot.start}</td>`;
+    for (const day of DAYS) {
+      const periodLessons = byDay[day]?.filter(l => l.period === slot.period) || [];
+      if (periodLessons.length === 0) {
+        html += `<td style="padding:6px 8px;border:1px solid var(--border);text-align:center;color:var(--text-light);">—</td>`;
+      } else {
+        const l = periodLessons[0];
+        html += `<td style="padding:6px 8px;border:1px solid var(--border);text-align:center;font-size:0.75rem;">
+          <strong>${esc(l.subject)}</strong><br>
+          <span style="font-size:0.65rem;color:var(--text-muted);">${esc(l.klass)}</span>
+        </td>`;
+      }
+    }
+    html += '</tr>';
+  }
+  
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+  document.getElementById("sub-teacher-schedule").style.display = "block";
+}
+
+function displayTeacherProfileSub(teacher) {
+  const container = document.getElementById("sub-teacher-profile");
+  if (!container || !schedule) return;
+  
+  const lessons = [];
+  for (const day of DAYS) {
+    if (!schedule?.grid?.[day]) continue;
+    for (const period in schedule.grid[day]) {
+      for (const l of schedule.grid[day][period]) {
+        if (l.teacher === teacher) lessons.push(l);
+      }
+    }
+  }
+  
+  const classes = [...new Set(lessons.map(l => l.klass))];
+  const subjects = [...new Set(lessons.map(l => l.subject))];
+  const fixedCount = lessons.filter(l => l.patternType === 'high').length;
+  const flexibleCount = lessons.filter(l => l.patternType === 'flexible').length;
+  
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+      <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;color:var(--bg);background:var(--accent);">${initials(teacher)}</div>
+      <div>
+        <div style="font-weight:700;color:var(--text);font-size:0.95rem;">${esc(teacher)}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);">📊 ${lessons.length} periods | 🏫 ${classes.length} classes | 📖 ${subjects.length} subjects</div>
+        <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">🔒 ${fixedCount} fixed | 🔄 ${flexibleCount} flexible</div>
+      </div>
+    </div>
+  `;
+}
+
+function findSubstitutes(absentTeacher, day) {
+  if (!schedule) return [];
+  
+  const absentLessons = [];
+  for (const period in schedule.grid[day]) {
+    for (const l of schedule.grid[day][period]) {
+      if (l.teacher === absentTeacher) {
+        absentLessons.push({ period: parseInt(period), subject: l.subject, klass: l.klass, patternType: l.patternType });
+      }
+    }
+  }
+  
+  if (absentLessons.length === 0) return [];
+  
+  const allTeachers = getAllTeachers().filter(t => t !== absentTeacher);
+  const results = [];
+  
+  for (const lesson of absentLessons) {
+    const subs = [];
+    for (const teacher of allTeachers) {
+      const teacherLessons = [];
+      for (const p in schedule.grid[day]) {
+        for (const l of schedule.grid[day][p]) {
+          if (l.teacher === teacher) teacherLessons.push(parseInt(p));
+        }
+      }
+      const isBusy = teacherLessons.includes(lesson.period);
+      if (!isBusy) {
+        const knowsSubject = entries.some(e => e.teacher === teacher && e.subject === lesson.subject);
+        const knowsClass = entries.some(e => e.teacher === teacher && e.klass === lesson.klass);
+        subs.push({ teacher, knowsSubject, knowsClass, score: (knowsSubject ? 2 : 0) + (knowsClass ? 1 : 0) });
+      }
+    }
+    subs.sort((a, b) => b.score - a.score);
+    const slot = schedule.slots.find(s => s.period === lesson.period);
+    results.push({ ...lesson, periodDisplay: slot ? `${slot.start}` : `P${lesson.period}`, substitutes: subs.slice(0, 3) });
+  }
+  return results;
+}
+
+function displayCoverage(absentTeacher, day) {
+  const results = findSubstitutes(absentTeacher, day);
+  const container = document.getElementById("substitution-results");
+  if (!container) return;
+  
+  if (results.length === 0) {
+    container.innerHTML = `<div style='background:var(--bg-secondary);border-radius:6px;padding:16px;text-align:center;color:var(--text-muted);font-size:0.9rem;'>${t('no-coverage')}</div>`;
+    return;
+  }
+  
+  let html = `<h4 style='margin-bottom:10px;color:var(--text);font-size:0.95rem;'>📋 Classes Needing Coverage</h4>`;
+  for (const r of results) {
+    const patternIcon = r.patternType === 'high' ? '🔒' : r.patternType === 'flexible' ? '🔄' : '';
+    html += `
+      <div class="suggestion-item">
+        <div style="font-weight:700;color:var(--text);font-size:0.9rem;">📚 ${esc(r.klass)} ${patternIcon}</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin:2px 0;">⏰ ${r.periodDisplay}</div>
+        <div style="font-size:0.85rem;margin-bottom:6px;">📖 ${esc(r.subject)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+    `;
+    for (const sub of r.substitutes) {
+      const badges = [];
+      if (sub.knowsSubject) badges.push("📖 subject");
+      if (sub.knowsClass) badges.push("🏫 class");
+      const badgeText = badges.length ? ` <span style="font-size:0.6rem;">(${badges.join(', ')})</span>` : '';
+      html += `
+        <button class="sub-btn" onclick="confirmSubstitution('${esc(absentTeacher)}','${esc(sub.teacher)}','${esc(r.klass)}','${esc(r.subject)}','${day}',${r.period})">
+          ${esc(sub.teacher)}${badgeText}
+        </button>
+      `;
+    }
+    html += `</div></div>`;
+  }
+  container.innerHTML = html;
+}
+
+function confirmSubstitution(absent, sub, klass, subject, day, period) {
+  if (confirm(`Confirm substitution?\n\nAbsent: ${absent}\nSubstitute: ${sub}\nClass: ${klass}\nSubject: ${subject}\n${day}, Period ${period}`)) {
+    substitutionHistory.push({
+      absentTeacher: absent,
+      substituteTeacher: sub,
+      klass, subject, day, period,
+      date: new Date().toLocaleString()
+    });
+    saveSubstitutionHistory();
+    showMessage(`✅ ${sub} will cover ${klass} for ${subject}`, "ok");
+  }
+}
+window.confirmSubstitution = confirmSubstitution;
+
+function initSubstitutionPanel() {
+  document.getElementById("sub-locate-btn")?.addEventListener("click", () => {
+    const teacher = document.getElementById("sub-teacher-select")?.value;
+    if (!teacher) {
+      showMessage(t('select-teacher-msg'), "warn");
+      return;
+    }
+    if (!schedule) {
+      showMessage(t('generate-first'), "error");
+      return;
+    }
+    displayTeacherProfileSub(teacher);
+    displayTeacherScheduleSub(teacher);
+  });
+
+  document.getElementById("find-substitute-btn")?.addEventListener("click", () => {
+    const teacher = document.getElementById("absent-teacher-select")?.value;
+    const day = document.getElementById("absent-day-select")?.value;
+    if (!teacher) {
+      showMessage(t('select-absent-msg'), "warn");
+      return;
+    }
+    if (!schedule) {
+      showMessage(t('generate-first'), "error");
+      return;
+    }
+    displayCoverage(teacher, day);
+  });
+
+  document.getElementById("clear-history-btn")?.addEventListener("click", () => {
+    if (confirm("Clear substitution history?")) {
+      substitutionHistory = [];
+      saveSubstitutionHistory();
+      showMessage("History cleared", "ok");
+    }
+  });
+}
+
+// ============================================
+// TAB SWITCHING
+// ============================================
+function initTabs() {
+  document.querySelectorAll(".main-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      document.getElementById(`${target}-tab`).classList.add("active");
+      if (target === "substitution") {
+        populateSubstitutionDropdowns();
+      }
+    });
+  });
+}
+
+// ============================================
+// ON LOAD
+// ============================================
+document.addEventListener("DOMContentLoaded", function() {
+  initTabs();
+  initSubstitutionPanel();
+  loadFromLocalStorage();
+  renderList();
+  populateSubstitutionDropdowns();
+  setLanguage('en');
+  initDragDrop();
+  updateDragModeButton();
+  updateDragInfo();
+  
+  detectMobile();
+  
+  document.getElementById("generate-btn-top")?.addEventListener("click", generate);
+  document.getElementById("generate-btn-bottom")?.addEventListener("click", generate);
+});
+</script>
+</body>
+</html>
