@@ -1748,7 +1748,8 @@ window.unlockAll = unlockAll;
 
 function updateLockCount() {
   const locked = entries.filter(e => e.locked).length;
-  document.getElementById('lock-count').textContent = `${locked} locked`;
+  const el = document.getElementById('lock-count');
+  if (el) el.textContent = `${locked} locked`;
 }
 
 // ============================================
@@ -1887,15 +1888,28 @@ function getLessonsPerWeek(entry) {
 // ============================================
 function renderList() {
   const tbody = document.getElementById("teacher-table-body");
-  if (!tbody) return;
+  if (!tbody) {
+    console.error("teacher-table-body not found!");
+    return;
+  }
   tbody.innerHTML = "";
   
   if (entries.length === 0) {
     tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-light);padding:20px;font-size:0.9rem;">${t('no-teachers')}</td></tr>`;
-    document.getElementById("teacher-list-wrap").classList.add("hidden");
-    document.getElementById("count-pill").textContent = "0";
-    document.getElementById("generate-btn-top").disabled = true;
-    document.getElementById("generate-btn-bottom").disabled = true;
+    
+    // SAFE UPDATES WITH NULL CHECKS
+    const wrap = document.getElementById("teacher-list-wrap");
+    if (wrap) wrap.classList.add("hidden");
+    
+    const pill = document.getElementById("count-pill");
+    if (pill) pill.textContent = "0";
+    
+    const genBtnTop = document.getElementById("generate-btn-top");
+    if (genBtnTop) genBtnTop.disabled = true;
+    
+    const genBtnBottom = document.getElementById("generate-btn-bottom");
+    if (genBtnBottom) genBtnBottom.disabled = true;
+    
     updateLockCount();
     return;
   }
@@ -1928,16 +1942,25 @@ function renderList() {
     tbody.appendChild(tr);
   });
   
-  document.getElementById("teacher-list-wrap").classList.remove("hidden");
-  document.getElementById("count-pill").textContent = entries.length;
-  document.getElementById("generate-btn-top").disabled = false;
-  document.getElementById("generate-btn-bottom").disabled = false;
+  // SAFE UPDATES WITH NULL CHECKS
+  const wrap = document.getElementById("teacher-list-wrap");
+  if (wrap) wrap.classList.remove("hidden");
+  
+  const pill = document.getElementById("count-pill");
+  if (pill) pill.textContent = entries.length;
+  
+  const genBtnTop = document.getElementById("generate-btn-top");
+  if (genBtnTop) genBtnTop.disabled = false;
+  
+  const genBtnBottom = document.getElementById("generate-btn-bottom");
+  if (genBtnBottom) genBtnBottom.disabled = false;
+  
   populateSubstitutionDropdowns();
   updateViewSelector();
   updateLockCount();
 }
-
 function removeEntry(i) {
+  if (!entries[i]) return;
   if (entries[i].locked) {
     showMessage(`${entries[i].teacher} is locked. Unlock first.`, "warn");
     return;
@@ -1947,19 +1970,20 @@ function removeEntry(i) {
     renderList();
     saveToLocalStorage();
     schedule = null;
-    $("output-panel")?.classList.add("hidden");
+    const outputPanel = document.getElementById("output-panel");
+    if (outputPanel) outputPanel.classList.add("hidden");
   }
 }
 window.removeEntry = removeEntry;
-
+   
 function toggleLock(i) {
+  if (!entries[i]) return;
   entries[i].locked = !entries[i].locked;
   renderList();
   saveToLocalStorage();
   if (schedule) renderTimetables();
 }
 window.toggleLock = toggleLock;
-
 // ============================================
 // SORT TABLE
 // ============================================
