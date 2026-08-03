@@ -4015,6 +4015,78 @@ document.addEventListener("DOMContentLoaded", function() {
   document.getElementById('today-name').textContent = dateStr;
 });
 
+// ============================================
+// ADMIN/USER MODE TOGGLE
+// ============================================
+document.addEventListener("DOMContentLoaded", function() {
+  const toggle = document.getElementById("admin-toggle");
+  const adminSections = document.querySelectorAll(".hide-on-user");
+  const userTabs = document.getElementById("user-view-tabs");
+  
+  if (toggle) {
+    toggle.addEventListener("change", function() {
+      const isAdmin = this.checked;
+      
+      // Toggle Admin Sections (Add Teachers / Setup / Toolbar / Generate)
+      adminSections.forEach(el => {
+        if (isAdmin) el.classList.remove("hidden-admin");
+        else el.classList.add("hidden-admin");
+      });
+      
+      // Toggle User Tabs
+      if (isAdmin) {
+        userTabs.classList.remove("active");
+        // Reset to full grid view for admin
+        document.getElementById("view-selector").value = "consolidated";
+        if (schedule) renderTimetables();
+      } else {
+        userTabs.classList.add("active");
+        // Default to summary view for users
+        document.getElementById("view-selector").value = "summary";
+        if (schedule) renderTimetables();
+      }
+    });
+  }
+
+  // ============================================
+  // USER TAB CLICK EVENTS
+  // ============================================
+  document.querySelectorAll(".user-tab-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      // UI: Update active tab styling
+      document.querySelectorAll(".user-tab-btn").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      
+      const view = this.dataset.view;
+      
+      // Action: Switch the view in the backend
+      if (view === "summary") {
+        document.getElementById("view-selector").value = "summary";
+        if (schedule) renderTimetables();
+      } else if (view === "class") {
+        // Show class selector and filter
+        const classes = [...new Set(entries.map(e => e.klass))];
+        if (classes.length === 0) { showMessage("No classes found", "warn"); return; }
+        const selected = prompt(`Select a Class:\n${classes.join(", ")}`);
+        if (selected && classes.includes(selected)) {
+          document.getElementById("view-selector").value = `class:${selected}`;
+          if (schedule) renderTimetables();
+        }
+      } else if (view === "teacher") {
+        // Show teacher selector and filter
+        const teachers = [...new Set(entries.map(e => e.teacher))];
+        if (teachers.length === 0) { showMessage("No teachers found", "warn"); return; }
+        const selected = prompt(`Select a Teacher:\n${teachers.join(", ")}`);
+        if (selected && teachers.includes(selected)) {
+          document.getElementById("view-selector").value = `teacher:${selected}`;
+          if (schedule) renderTimetables();
+        }
+      } else if (view === "workload") {
+        showWorkloadSummary();
+      }
+    });
+  });
+});
   
 </script>
 </body>
