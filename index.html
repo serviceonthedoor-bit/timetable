@@ -3941,13 +3941,33 @@ document.getElementById("excel-btn")?.addEventListener("click", () => {
   showMessage("Excel downloaded!", "ok");
 });
 
-// ============================================
-// INITIALIZATION
-// ============================================
+// --- NEW: Function to load remote data if empty - This code was written to pull data from loaded json file---
+async function loadRemoteData() {
+    // Only load if the user doesn't already have their own saved data
+    if (localStorage.getItem("timetableStudioData")) return;
+
+    try {
+        const response = await fetch('default_data.json');
+        const data = await response.json();
+        localStorage.setItem("timetableStudioData", JSON.stringify(data));
+        loadFromLocalStorage(); // Reload the newly imported data
+        renderList();
+        showMessage("📥 Loaded default schedule successfully!", "ok");
+    } catch (err) {
+        console.warn("No default data found on server. Starting fresh.");
+    }
+}
+// --------------------------------------------------
+
 document.addEventListener("DOMContentLoaded", function() {
   initTabs();
   initSubstitutionPanel();
-  loadFromLocalStorage();
+  
+  loadRemoteData(); // <--- ADD THIS LINE HERE (This loads the file)
+  
+  // Note: Keep loadFromLocalStorage() inside the loadRemoteData function, 
+  // so it waits for the fetch to finish first!
+  
   populateDropdownLists();
   renderList();
   populateSubstitutionDropdowns();
@@ -3962,6 +3982,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const dateStr = today.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('today-name').textContent = dateStr;
 });
+  
 </script>
 </body>
 </html>
