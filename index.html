@@ -3947,32 +3947,58 @@ document.getElementById("excel-btn")?.addEventListener("click", () => {
   showMessage("Excel downloaded!", "ok");
 });
 
-// --- NEW: Function to load remote data if empty - This code was written to pull data from loaded json file---
+// ============================================
+// LOAD DEFAULT DATA FROM REMOTE JSON (NEW USER)
+// ============================================
 async function loadRemoteData() {
-    // Only load if the user doesn't already have their own saved data
-    if (localStorage.getItem("timetableStudioData")) return;
+    // 1. If user already has data in their browser, just load it and stop
+    if (localStorage.getItem("timetableStudioData")) {
+        loadFromLocalStorage();
+        renderList();
+        
+        // If data is loaded but no grid exists yet, auto-generate it
+        setTimeout(() => {
+            if (entries.length > 0 && !schedule) {
+                generate();
+            }
+        }, 200);
+        return; 
+    }
 
+    // 2. If user is BRAND NEW, fetch from GitHub
     try {
         const response = await fetch('default_data.json');
         const data = await response.json();
         localStorage.setItem("timetableStudioData", JSON.stringify(data));
-        loadFromLocalStorage(); // Reload the newly imported data
+        loadFromLocalStorage(); 
         renderList();
-        showMessage("📥 Loaded default schedule successfully!", "ok");
+        
+        // 3. Auto-generate the grid immediately for the new user
+        setTimeout(() => {
+            if (entries.length > 0) {
+                generate(); 
+                showMessage("✅ Your timetable is ready!", "ok");
+            }
+        }, 250); 
+        
     } catch (err) {
         console.warn("No default data found on server. Starting fresh.");
     }
 }
-// --------------------------------------------------
 
+// ============================================
+// INITIALIZATION ON PAGE LOAD
+// ============================================
 document.addEventListener("DOMContentLoaded", function() {
   initTabs();
   initSubstitutionPanel();
   
-  loadRemoteData(); // <--- ADD THIS LINE HERE (This loads the file)
+  // Load remote data first (for new users)
+  loadRemoteData(); 
   
-  // Note: Keep loadFromLocalStorage() inside the loadRemoteData function, 
-  // so it waits for the fetch to finish first!
+  // Note: loadFromLocalStorage() is now handled inside loadRemoteData() 
+  // for new users. However, we keep it here just in case the fetch fails.
+  loadFromLocalStorage(); 
   
   populateDropdownLists();
   renderList();
@@ -3988,6 +4014,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const dateStr = today.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('today-name').textContent = dateStr;
 });
+
   
 </script>
 </body>
