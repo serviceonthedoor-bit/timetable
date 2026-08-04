@@ -4544,7 +4544,8 @@ document.getElementById("import-btn")?.addEventListener("click", () => {
 // ============================================
 // LOAD DEFAULT DATA FROM REMOTE JSON (NEW USER)
 // ============================================
-async function loadRemoteData() {
+const APP_VERSION = "2.2"; // ← ADD THIS LINE HERE (right at the top of the function)
+	async function loadRemoteData() {
     if (localStorage.getItem("timetableStudioData")) {
         loadFromLocalStorage();
         renderList();
