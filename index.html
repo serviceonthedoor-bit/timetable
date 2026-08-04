@@ -51,6 +51,8 @@
   --locked-border: #4a6cf7;
   --forced-bg: #fff3cd;
   --forced-border: #ffc107;
+  --admin-bg: #2d2d4a;
+  --admin-accent: #6c5ce7;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -77,11 +79,18 @@ body {
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--accent);
-  border: 1px solid var(--accent);
   padding: 4px 14px;
   border-radius: 20px;
   margin-bottom: 10px;
+}
+.hero .badge.admin-badge {
+  color: var(--admin-accent);
+  border: 1px solid var(--admin-accent);
+  background: rgba(108, 92, 231, 0.1);
+}
+.hero .badge.user-badge {
+  color: var(--accent);
+  border: 1px solid var(--accent);
 }
 .hero h1 {
   font-size: clamp(2rem, 4.5vw, 3rem);
@@ -94,6 +103,18 @@ body {
   color: var(--text-muted);
   margin-top: 4px;
   font-size: 1rem;
+}
+
+.admin-mode-controls {
+  margin-top: 12px;
+  display: none;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.admin-mode-controls.visible {
+  display: flex;
 }
 
 .main-layout {
@@ -935,7 +956,8 @@ footer {
   .generate-row, .pattern-summary, .lang-toggle, .pattern-toggle-wrap,
   .drag-info, .controls-row, .list-head, .table-wrap, #teacher-list-wrap,
   #entry-form, .settings-grid, .card-head, .drag-handle, .delete-lesson-btn,
-  .mobile-badge, .mobile-nav, #today-indicator {
+  .mobile-badge, .mobile-nav, #today-indicator, .admin-mode-controls,
+  .user-view-tabs, .view-selector-wrap, .view-toggle-group {
     display: none !important;
   }
   #output-panel.card {
@@ -958,6 +980,8 @@ footer {
   .table-scroll { border: 1px solid #999 !important; }
   .class-teacher-row { border: 1px solid #999 !important; background: #f5f5f5 !important; }
   .timetable-grid .lesson-teacher { font-size: 0.8rem !important; }
+  .summary-view { font-size: 7px !important; }
+  .summary-view th, .summary-view td { padding: 3px 4px !important; }
 }
 
 .context-menu {
@@ -1082,6 +1106,108 @@ footer {
   border-bottom: 1px solid var(--border-light);
   color: var(--text-secondary);
 }
+
+/* Admin mode styles */
+.hidden-admin { 
+  display: none !important; 
+}
+
+.admin-lock-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  backdrop-filter: blur(8px);
+}
+
+.admin-lock-screen.hidden { display: none !important; }
+
+.admin-lock-screen .lock-box {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 40px 48px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.admin-lock-screen .lock-box h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.admin-lock-screen .lock-box p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.admin-lock-screen .lock-box input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--input-bg);
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.admin-lock-screen .lock-box input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.admin-lock-screen .lock-box .btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.admin-lock-screen .lock-box .error-msg {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 8px;
+  min-height: 24px;
+}
+
+.user-view-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.user-view-tabs .user-tab-btn {
+  padding: 8px 16px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-view-tabs .user-tab-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.user-view-tabs .user-tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
 </style>
 </head>
 <body>
@@ -1102,21 +1228,38 @@ footer {
 
 <header class="hero">
   <div class="hero-inner">
-    <span class="badge">CLASH-FREE SCHEDULING</span>
+    <span class="badge user-badge" id="mode-badge">👤 USER MODE</span>
     <h1>Timetable <span class="grad">Studio</span></h1>
     <p>Add teachers, generate timetables, and manage substitutions</p>
     <div id="today-indicator">📅 Today is <strong id="today-name"></strong></div>
+    <div id="admin-mode-controls" class="admin-mode-controls">
+      <button onclick="lockAdminMode()" class="btn warning small">🔒 Lock Admin</button>
+      <button onclick="applyUserMode()" class="btn ghost small">👁️ View as User</button>
+    </div>
   </div>
 </header>
 
+<!-- Admin Lock Screen -->
+<div id="admin-lock-overlay" class="admin-lock-screen">
+  <div class="lock-box">
+    <div style="font-size: 3rem; margin-bottom: 8px;">🔒</div>
+    <h2>Admin Access</h2>
+    <p>Enter the admin password to manage timetable settings</p>
+    <input type="password" id="admin-password-input" placeholder="Enter password..." autocomplete="off">
+    <button id="admin-unlock-btn" class="btn primary">Unlock Admin Mode</button>
+    <div id="admin-error-msg" class="error-msg"></div>
+  </div>
+</div>
+
 <div class="main-layout">
-  <div class="main-tabs">
+  <div class="main-tabs" id="main-tabs-container">
     <button class="main-tab active" data-tab="timetable">📅 Timetable</button>
     <button class="main-tab" data-tab="substitution">🔄 Substitution</button>
   </div>
 
   <div id="timetable-tab" class="tab-content active">
-    <div class="card">
+    <!-- School Setup - Admin Only -->
+    <div class="card admin-section">
       <div class="card-head">
         <span class="step">1</span>
         <div><h2>School Setup</h2><p>Configure your school day</p></div>
@@ -1139,7 +1282,8 @@ footer {
       </div>
     </div>
 
-    <div class="card">
+    <!-- Add Teachers - Admin Only -->
+    <div class="card admin-section">
       <div class="card-head">
         <span class="step">2</span>
         <div><h2>Add Teachers</h2><p>Enter teacher, subject, class, and schedule preferences</p></div>
@@ -1150,6 +1294,15 @@ footer {
         <button type="button" id="load-options-btn" class="btn ghost small">📥 Load Names from Excel</button>
         <input type="file" id="options-file-input" accept=".xlsx,.xls,.csv" style="display:none;">
         <button type="button" id="clear-options-btn" class="btn ghost small">🗑️ Clear Saved Names</button>
+      </div>
+
+      <!-- User View Tabs -->
+      <div id="user-view-tabs-container" class="user-view-tabs">
+        <button class="user-tab-btn active" data-view="summary">📋 Summary</button>
+        <button class="user-tab-btn" data-view="workload">📊 Workload</button>
+        <button class="user-tab-btn" data-view="teacher">👩‍🏫 Teacher</button>
+        <button class="user-tab-btn" data-view="class">📚 Class</button>
+        <button class="user-tab-btn" data-view="admin-toggle" style="border-color: var(--accent); color: var(--accent);">🔐 Admin</button>
       </div>
 
       <form id="entry-form">
@@ -1259,6 +1412,7 @@ footer {
       </div>
     </div>
 
+    <!-- Output Panel -->
     <div id="output-panel" class="card hidden">
       <div class="card-head">
         <span class="step">3</span>
@@ -1287,6 +1441,7 @@ footer {
           <button id="excel-btn" class="btn ghost small">📊 Excel</button>
           <button onclick="lockAllCurrentPositions()" class="btn warning small">🔒 Lock Current</button>
           <button onclick="unlockAllLessons()" class="btn ghost small">🔓 Unlock All</button>
+	  <button id="print-summary-btn" class="btn ghost small" style="border-color: var(--accent); color: var(--accent);">	🖨️ Print Summary (A3)</button>
         </div>
       </div>
       <div id="timetable-container"></div>
@@ -1338,7 +1493,13 @@ footer {
   </div>
 </div>
 
-<footer>Built with Timetable Studio · Clash-free scheduling · Auto-saves</footer>
+<footer>
+  Built with Timetable Studio · Clash-free scheduling · Auto-saves
+  <br>
+  <a href="#" id="admin-link" style="color: var(--accent); text-decoration: none; font-size: 0.7rem; margin-top: 4px; display: inline-block;">🔐 Admin</a>
+</footer>
+
+
 
 <script>
 // ============================================
@@ -1368,6 +1529,12 @@ let dragData = null;
 let dragSource = null;
 let contextMenuTarget = null;
 let dropdownOptions = { teachers: [], subjects: [], classes: [] };
+
+// ============================================
+// ADMIN MODE STATE
+// ============================================
+const ADMIN_PASSWORD = "admin123";
+let isAdminMode = false;
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -1598,13 +1765,11 @@ function isClassBusy(klass, day, period, grid) {
 
 function buildSlots() {
   // --- HARDCODED SETTINGS ---
-  // We ignore the HTML input boxes and force these exact values:
-  const startTime = "10:55";        // Class starts at 10:55 AM
-  const periods = 7;                // Fixed at 7 periods per day
-  const breakAfter = 4;             // Break after the 4th period
-  const breakLength = 35;           // 30-minute break
-  const lessonMinutes = 40;         // Each period is 40 minutes
-  // ---------------------------
+  const startTime = "10:55";
+  const periods = 7;
+  const breakAfter = 4;
+  const breakLength = 35;
+  const lessonMinutes = 40;
 
   const [h, m] = startTime.split(":").map(Number);
   let minutes = h * 60 + m;
@@ -1665,7 +1830,7 @@ function populateDropdownLists() {
 }
 
 // ============================================
-// GENERATION ALGORITHM WITH PERIOD & DAY SUPPORT
+// GENERATION ALGORITHM
 // ============================================
 function generateRobustTimetable() {
   const { periods, slots, lessonMinutes } = buildSlots();
@@ -1678,11 +1843,9 @@ function generateRobustTimetable() {
   const placedPositions = new Set();
   const conflicts = [];
 
-  // STEP 1: Entries with specific Period and Day (force place)
   const entriesWithPeriod = entries.filter(e => e.period !== null && e.period !== undefined && e.period !== '');
   const entriesWithoutPeriod = entries.filter(e => e.period === null || e.period === undefined || e.period === '');
 
-  // Sort: specific day first, then all-days
   entriesWithPeriod.sort((a, b) => {
     if (a.day && !b.day) return -1;
     if (!a.day && b.day) return 1;
@@ -1699,11 +1862,9 @@ function generateRobustTimetable() {
       
       const posKey = getPosKey(entry.teacher, entry.subject, entry.klass, day, period);
       
-      // Check for conflicts
       const teacherBusy = isTeacherBusy(entry.teacher, day, period, grid);
       const classBusy = isClassBusy(entry.klass, day, period, grid);
       
-      // FORCE PLACE - even if there's a conflict
       grid[day][period].push({ 
         ...entry, 
         day, 
@@ -1722,7 +1883,6 @@ function generateRobustTimetable() {
         });
       }
       
-      // Handle double periods
       if (entry.isDouble && period + 1 <= periods) {
         if (!grid[day][period + 1]) grid[day][period + 1] = [];
         const posKey2 = getPosKey(entry.teacher, entry.subject, entry.klass, day, period + 1);
@@ -1751,7 +1911,6 @@ function generateRobustTimetable() {
     }
   }
 
-  // STEP 2: Entries without specific period (random placement)
   for (const entry of entriesWithoutPeriod) {
     const totalNeeded = getTotalLessonCount(entry);
     const availDays = entry.days || DAYS;
@@ -1800,7 +1959,6 @@ function generateRobustTimetable() {
     }
   }
 
-  // Report conflicts
   if (conflicts.length > 0) {
     const conflictDetails = conflicts.map(c => 
       `${c.entry.teacher} - ${c.entry.subject} (${c.entry.klass}) @ ${c.day} P${c.period}: ${c.reason}`
@@ -2512,18 +2670,14 @@ function buildSummaryView() {
       } else {
         let cellContent = '<div style="display:flex;flex-direction:column;gap:2px;align-items:center;width:100%;">';
         
-        // DEDUPLICATION LOGIC: Use a Map to collapse identical Teacher + Subject combos
         const uniqueLessons = new Map();
         foundLessons.forEach(l => {
-          // Create a unique key based on Teacher and Subject (ignoring the day)
           const key = `${l.teacher.trim().toLowerCase()}|||${l.subject.trim().toLowerCase()}`;
-          // Only keep the first occurrence of this combo in the summary
           if (!uniqueLessons.has(key)) {
             uniqueLessons.set(key, l);
           }
         });
 
-        // Render only the unique lessons
         uniqueLessons.forEach((lesson) => {
           const isLocked = isLessonLocked(lesson);
           const isForced = lesson._forced || false;
@@ -2567,7 +2721,6 @@ function buildSummaryView() {
   table.appendChild(tbody);
   scroll.appendChild(table);
   container.appendChild(scroll);
-  
   const footer = document.createElement("div");
   footer.className = "pattern-summary";
   let footerHtml = "<strong>👩‍🏫 Class Teachers:</strong> ";
@@ -2656,7 +2809,7 @@ function showWorkloadSummary() {
   
   const teacherPeriods = new Map();
   const teacherDetails = new Map();
-  const teacherDayPeriods = new Map(); // teacher -> { Monday: n, Tuesday: n, ... }
+  const teacherDayPeriods = new Map();
   
   for (const day of DAYS) {
     for (const period in schedule.grid[day]) {
@@ -2870,7 +3023,6 @@ function exportWorkloadExcel() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Teacher_Workload");
   
-  // Day-wise breakdown sheet
   const teacherDayPeriods = new Map();
   for (const day of DAYS) {
     for (const period in schedule.grid[day]) {
@@ -3588,12 +3740,292 @@ document.getElementById("view-selector")?.addEventListener("change", function() 
 });
 
 // ============================================
-// PDF EXPORT
+// ADMIN MODE FUNCTIONS
+// ============================================
+function checkAdminStatus() {
+  const saved = localStorage.getItem("timetableAdminMode");
+  if (saved === "true") {
+    isAdminMode = true;
+    applyAdminMode();
+  } else {
+    isAdminMode = false;
+    // Don't call applyUserMode() here - it's already called on page load
+    // Just make sure the lock screen is visible if not admin
+    document.getElementById("admin-lock-overlay").classList.add("hidden");
+  }
+}
+
+function applyAdminMode() {
+  isAdminMode = true;
+  localStorage.setItem("timetableAdminMode", "true");
+  
+  // Show admin sections
+  document.querySelectorAll(".admin-section").forEach(el => {
+    el.classList.remove("hidden-admin");
+  });
+  
+  // Show admin mode controls in header
+  const controls = document.getElementById("admin-mode-controls");
+  if (controls) controls.classList.add("visible");
+  
+  // Show main tabs
+  document.querySelectorAll(".main-tab").forEach(el => {
+    el.style.display = "";
+  });
+  
+  // Hide lock screen
+  document.getElementById("admin-lock-overlay").classList.add("hidden");
+  
+  // Hide user tabs
+  document.getElementById("user-view-tabs-container").style.display = "none";
+  
+  // Update badge
+  const badge = document.querySelector(".hero .badge");
+  if (badge) {
+    badge.textContent = "🔐 ADMIN MODE";
+    badge.className = "badge admin-badge";
+  }
+  
+  showMessage("🔐 Admin mode activated", "ok");
+}
+
+function applyUserMode() {
+  isAdminMode = false;
+  localStorage.removeItem("timetableAdminMode");
+  
+  // Hide admin sections
+  document.querySelectorAll(".admin-section").forEach(el => {
+    el.classList.add("hidden-admin");
+  });
+  
+  // Hide admin mode controls in header
+  const controls = document.getElementById("admin-mode-controls");
+  if (controls) controls.classList.remove("visible");
+  
+  // Hide main tabs
+  document.querySelectorAll(".main-tab").forEach(el => {
+    el.style.display = "none";
+  });
+  
+  // Make sure timetable tab is active
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  document.getElementById("timetable-tab").classList.add("active");
+  document.querySelectorAll(".main-tab").forEach(t => t.classList.remove("active"));
+  const timetableTab = document.querySelector('.main-tab[data-tab="timetable"]');
+  if (timetableTab) timetableTab.classList.add("active");
+  
+  // Show user tabs
+  document.getElementById("user-view-tabs-container").style.display = "flex";
+  
+  // Update badge
+  const badge = document.querySelector(".hero .badge");
+  if (badge) {
+    badge.textContent = "👤 USER MODE";
+    badge.className = "badge user-badge";
+  }
+  
+  // HIDE the lock screen (user starts in user mode)
+  document.getElementById("admin-lock-overlay").classList.add("hidden");
+  document.getElementById("admin-password-input").value = "";
+  document.getElementById("admin-error-msg").textContent = "";
+  
+  showMessage("👤 Switched to user mode", "ok");
+}
+
+function lockAdminMode() {
+  if (isAdminMode && confirm("Lock admin mode and return to user view?")) {
+    applyUserMode();
+    showMessage("🔒 Admin mode locked", "ok");
+  }
+}
+window.lockAdminMode = lockAdminMode;
+
+// Admin unlock handler
+document.getElementById("admin-unlock-btn")?.addEventListener("click", function() {
+  const password = document.getElementById("admin-password-input").value;
+  const errorMsg = document.getElementById("admin-error-msg");
+  
+  if (password === ADMIN_PASSWORD) {
+    errorMsg.textContent = "";
+    document.getElementById("admin-password-input").value = "";
+    applyAdminMode();
+  } else {
+    errorMsg.textContent = "❌ Incorrect password. Please try again.";
+    document.getElementById("admin-password-input").value = "";
+    document.getElementById("admin-password-input").focus();
+  }
+});
+
+// Enter key on password input
+document.getElementById("admin-password-input")?.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    document.getElementById("admin-unlock-btn").click();
+  }
+});
+
+// ============================================
+// USER VIEW TABS
+// ============================================
+// ============================================
+// USER VIEW TABS
+// ============================================
+document.querySelectorAll(".user-tab-btn").forEach(btn => {
+  btn.addEventListener("click", function() {
+    const view = this.dataset.view;
+    
+    // Update active state
+    document.querySelectorAll(".user-tab-btn").forEach(b => b.classList.remove("active"));
+    this.classList.add("active");
+    
+    // Handle each view
+    if (view === "summary") {
+      document.getElementById("view-selector").value = "summary";
+      if (schedule) renderTimetables();
+      showMessage("📋 Summary view", "ok");
+    } else if (view === "workload") {
+      showWorkloadSummary();
+    } else if (view === "teacher") {
+      const teachers = [...new Set(entries.map(e => e.teacher))];
+      if (teachers.length === 0) { showMessage("No teachers found", "warn"); return; }
+      
+      const selected = prompt(`Select a Teacher:\n${teachers.join(", ")}`);
+      if (selected && teachers.includes(selected)) {
+        document.getElementById("view-selector").value = `teacher:${selected}`;
+        if (schedule) renderTimetables();
+        showMessage(`👩‍🏫 Viewing: ${selected}`, "ok");
+      }
+    } else if (view === "class") {
+      const classes = [...new Set(entries.map(e => e.klass))];
+      if (classes.length === 0) { showMessage("No classes found", "warn"); return; }
+      
+      const selected = prompt(`Select a Class:\n${classes.join(", ")}`);
+      if (selected && classes.includes(selected)) {
+        document.getElementById("view-selector").value = `class:${selected}`;
+        if (schedule) renderTimetables();
+        showMessage(`📚 Viewing: ${selected}`, "ok");
+      }
+    }
+  });
+});
+
+
+// Update user tab active state based on view selector changes
+document.getElementById("view-selector")?.addEventListener("change", function() {
+  const value = this.value;
+  if (value === "summary") {
+    document.querySelectorAll(".user-tab-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.view === "summary");
+    });
+  } else if (value.startsWith("teacher:")) {
+    document.querySelectorAll(".user-tab-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.view === "teacher");
+    });
+  } else if (value.startsWith("class:")) {
+    document.querySelectorAll(".user-tab-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.view === "class");
+    });
+  } else if (value === "workload") {
+    document.querySelectorAll(".user-tab-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.view === "workload");
+    });
+  }
+});
+
+// ============================================
+// PDF EXPORT - Enhanced with Summary View Support
 // ============================================
 document.getElementById("pdf-btn")?.addEventListener("click", () => {
   if (!schedule) { showMessage('Generate timetable first', "error"); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  
+  const viewSelector = document.getElementById("view-selector");
+  const currentView = viewSelector ? viewSelector.value : "consolidated";
+  
+  if (currentView === "summary" || viewMode === "summary") {
+    exportSummaryPDF(doc);
+  } else {
+    exportTimetablePDF(doc);
+  }
+});
+
+function exportSummaryPDF(doc) {
+  const classes = [...new Set(entries.map(e => e.klass))].sort((a, b) => {
+    const numA = parseInt(a) || 0;
+    const numB = parseInt(b) || 0;
+    return numA - numB;
+  });
+  
+  let yPos = 30;
+  
+  doc.setFontSize(16);
+  doc.setTextColor(74, 108, 247);
+  doc.text("Summary Timetable", 40, yPos);
+  yPos += 20;
+  
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 40, yPos);
+  yPos += 15;
+  
+  for (const klass of classes) {
+    if (yPos > 500) {
+      doc.addPage();
+      yPos = 30;
+      doc.setFontSize(16);
+      doc.setTextColor(74, 108, 247);
+      doc.text("Summary Timetable (Continued)", 40, yPos);
+      yPos += 20;
+    }
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text(`Class: ${klass}`, 40, yPos);
+    yPos += 10;
+    
+    const classLessons = [];
+    for (const day of DAYS) {
+      for (const period in schedule.grid[day]) {
+        const lessons = schedule.grid[day][period] || [];
+        const found = lessons.filter(l => l.klass === klass);
+        found.forEach(l => {
+          classLessons.push({ day, period: parseInt(period), teacher: l.teacher, subject: l.subject });
+        });
+      }
+    }
+    
+    const uniqueMap = new Map();
+    classLessons.forEach(l => {
+      const key = `${l.teacher}|||${l.subject}`;
+      if (!uniqueMap.has(key)) uniqueMap.set(key, l);
+    });
+    const uniqueLessons = Array.from(uniqueMap.values());
+    
+    const headers = ["Day", "Period", "Teacher", "Subject"];
+    const rows = uniqueLessons.map(l => [l.day, `P${l.period}`, l.teacher, l.subject]);
+    
+    if (rows.length > 0) {
+      doc.autoTable({
+        head: [headers],
+        body: rows,
+        startY: yPos,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [74, 108, 247] },
+        margin: { left: 40, right: 40 }
+      });
+      yPos = doc.lastAutoTable.finalY + 15;
+    } else {
+      doc.setFontSize(10);
+      doc.text("No lessons scheduled", 40, yPos);
+      yPos += 15;
+    }
+  }
+  
+  doc.save("summary_timetable.pdf");
+  showMessage("📄 Summary PDF exported!", "ok");
+}
+
+function exportTimetablePDF(doc) {
   const headers = ["Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period}`)];
   const consData = [headers];
   for (const day of DAYS) {
@@ -3608,7 +4040,14 @@ document.getElementById("pdf-btn")?.addEventListener("click", () => {
     }
     consData.push(row);
   }
-  doc.autoTable({ head: [consData[0]], body: consData.slice(1), startY: 30, styles: { fontSize: 7 }, headStyles: { fillColor: [74, 108, 247] } });
+  doc.autoTable({ 
+    head: [consData[0]], 
+    body: consData.slice(1), 
+    startY: 30, 
+    styles: { fontSize: 7 }, 
+    headStyles: { fillColor: [74, 108, 247] } 
+  });
+  
   const teachers = [...new Set(entries.map(e => e.teacher))];
   for (const teacher of teachers) {
     doc.addPage();
@@ -3628,15 +4067,20 @@ document.getElementById("pdf-btn")?.addEventListener("click", () => {
       }
       data.push(row);
     }
-    doc.autoTable({ head: [data[0]], body: data.slice(1), startY: 40, styles: { fontSize: 7 } });
+    doc.autoTable({ 
+      head: [data[0]], 
+      body: data.slice(1), 
+      startY: 40, 
+      styles: { fontSize: 7 } 
+    });
   }
   doc.save("timetable.pdf");
-});
+}
 
 document.getElementById("print-btn")?.addEventListener("click", () => window.print());
 
 // ============================================
-// EXCEL IMPORT
+// EXCEL IMPORT - Enhanced with Class Teacher & Co-Class Teacher Support
 // ============================================
 function importOptionsFromExcel(file) {
   const reader = new FileReader();
@@ -3644,18 +4088,22 @@ function importOptionsFromExcel(file) {
     try {
       const wb = XLSX.read(e.target.result, { type: 'binary' });
       let addedCount = 0;
+      let classTeacherMap = {};
 
       const matchCol = (header, candidates) => candidates.some(c => header.trim().toLowerCase() === c);
-      const teacherHeaders = ['teacher', 'teacher name'];
-      const subjectHeaders = ['subject', 'subject name'];
+      const teacherHeaders = ['teacher', 'teacher name', 'teachername'];
+      const subjectHeaders = ['subject', 'subject name', 'subjectname'];
       const classHeaders = ['class', 'class name', 'klass'];
-      const periodHeaders = ['period', 'period no', 'p'];
-      const dayHeaders = ['day', 'days', 'day name'];
+      const periodHeaders = ['period', 'period no', 'p', 'periodnumber'];
+      const dayHeaders = ['day', 'days', 'day name', 'dayname'];
+      const classTeacherHeaders = ['class teacher', 'classteacher', 'ct'];
+      const coClassTeacherHeaders = ['co class teacher', 'coteacher', 'co-teacher', 'co teacher'];
 
       wb.SheetNames.forEach(sheetName => {
         const sheet = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
         if (!rows.length) return;
+        
         const headerRow = rows[0].map(h => String(h || ''));
         const colMap = headerRow.map(h => {
           if (matchCol(h, teacherHeaders)) return 'teacher';
@@ -3663,18 +4111,47 @@ function importOptionsFromExcel(file) {
           if (matchCol(h, classHeaders)) return 'class';
           if (matchCol(h, periodHeaders)) return 'period';
           if (matchCol(h, dayHeaders)) return 'day';
+          if (matchCol(h, classTeacherHeaders)) return 'classTeacher';
+          if (matchCol(h, coClassTeacherHeaders)) return 'coClassTeacher';
           return null;
         });
 
+        // First pass: collect class teacher info
         for (let r = 1; r < rows.length; r++) {
           const row = rows[r];
-          let teacher, subject, klass, period, day;
+          let klass = '';
+          let classTeacher = '';
+          let coClassTeacher = '';
           
           colMap.forEach((type, c) => {
             const raw = row[c];
             if (raw === undefined || raw === null) return;
             const val = String(raw).trim();
             if (!val || val === '-') return;
+            if (type === 'class') klass = val;
+            if (type === 'classTeacher') classTeacher = val;
+            if (type === 'coClassTeacher') coClassTeacher = val;
+          });
+          
+          if (klass && (classTeacher || coClassTeacher)) {
+            if (!classTeacherMap[klass]) classTeacherMap[klass] = { classTeacher: '', coClassTeacher: '' };
+            if (classTeacher) classTeacherMap[klass].classTeacher = classTeacher;
+            if (coClassTeacher) classTeacherMap[klass].coClassTeacher = coClassTeacher;
+          }
+        }
+
+        // Second pass: import all entries
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r];
+          let teacher = '', subject = '', klass = '', period = null, day = null;
+          let classTeacher = '', coClassTeacher = '';
+          
+          colMap.forEach((type, c) => {
+            const raw = row[c];
+            if (raw === undefined || raw === null) return;
+            const val = String(raw).trim();
+            if (!val || val === '-') return;
+            
             if (type === 'teacher') teacher = val;
             if (type === 'subject') subject = val;
             if (type === 'class') klass = val;
@@ -3687,10 +4164,14 @@ function importOptionsFromExcel(file) {
                 'M': 'Monday', 'T': 'Tuesday', 'W': 'Wednesday', 
                 'Th': 'Thursday', 'F': 'Friday', 'S': 'Saturday',
                 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday',
-                'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday'
+                'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday',
+                '1': 'Monday', '2': 'Tuesday', '3': 'Wednesday',
+                '4': 'Thursday', '5': 'Friday', '6': 'Saturday'
               };
               day = dayMap[val] || val;
             }
+            if (type === 'classTeacher') classTeacher = val;
+            if (type === 'coClassTeacher') coClassTeacher = val;
           });
 
           if (!teacher || !subject || !klass) continue;
@@ -3704,12 +4185,16 @@ function importOptionsFromExcel(file) {
           );
           if (dup) continue;
 
+          const ctInfo = classTeacherMap[klass] || {};
+          const finalClassTeacher = classTeacher || ctInfo.classTeacher || '';
+          const finalCoClassTeacher = coClassTeacher || ctInfo.coClassTeacher || '';
+
           entries.push({
             teacher, subject, klass,
-            period: period || null,
-            day: day || null,
-            classTeacher: '',
-            coClassTeacher: '',
+            period: period,
+            day: day,
+            classTeacher: finalClassTeacher,
+            coClassTeacher: finalCoClassTeacher,
             isDouble: false,
             priority: 'light',
             customLessons: null,
@@ -3720,6 +4205,8 @@ function importOptionsFromExcel(file) {
           addOptionIfNew('teachers', teacher);
           addOptionIfNew('subjects', subject);
           addOptionIfNew('classes', klass);
+          if (finalClassTeacher) addOptionIfNew('teachers', finalClassTeacher);
+          if (finalCoClassTeacher) addOptionIfNew('teachers', finalCoClassTeacher);
           addedCount++;
         }
       });
@@ -3727,13 +4214,177 @@ function importOptionsFromExcel(file) {
       populateDropdownLists();
       renderList();
       saveToLocalStorage();
-      showMessage(`✅ Imported ${addedCount} entries from Excel with Period & Day support!`, "ok");
+      showMessage(`✅ Imported ${addedCount} entries from Excel with Class Teacher & Co-Class Teacher support!`, "ok");
     } catch (err) {
       console.error(err);
       showMessage('Could not read that Excel file. Make sure it\'s a valid .xlsx/.xls/.csv file.', 'error');
     }
   };
   reader.readAsBinaryString(file);
+}
+
+// ============================================
+// EXCEL EXPORT - Enhanced with Summary View Support
+// ============================================
+document.getElementById("excel-btn")?.addEventListener("click", () => {
+  if (!schedule) { showMessage('Generate timetable first', "error"); return; }
+  const wb = XLSX.utils.book_new();
+  
+  const viewSelector = document.getElementById("view-selector");
+  const currentView = viewSelector ? viewSelector.value : "consolidated";
+  
+  if (currentView === "summary" || viewMode === "summary") {
+    exportSummaryExcel(wb);
+  } else {
+    exportTimetableExcel(wb);
+  }
+});
+
+function exportSummaryExcel(wb) {
+  const classes = [...new Set(entries.map(e => e.klass))].sort((a, b) => {
+    const numA = parseInt(a) || 0;
+    const numB = parseInt(b) || 0;
+    return numA - numB;
+  });
+  
+  const masterData = [["Class", "Day", "Period", "Teacher", "Subject"]];
+  
+  for (const klass of classes) {
+    const classLessons = [];
+    for (const day of DAYS) {
+      for (const period in schedule.grid[day]) {
+        const lessons = schedule.grid[day][period] || [];
+        const found = lessons.filter(l => l.klass === klass);
+        found.forEach(l => {
+          classLessons.push({ day, period: parseInt(period), teacher: l.teacher, subject: l.subject });
+        });
+      }
+    }
+    
+    const uniqueMap = new Map();
+    classLessons.forEach(l => {
+      const key = `${l.teacher}|||${l.subject}`;
+      if (!uniqueMap.has(key)) uniqueMap.set(key, l);
+    });
+    const uniqueLessons = Array.from(uniqueMap.values());
+    
+    uniqueLessons.forEach(l => {
+      masterData.push([klass, l.day, `P${l.period}`, l.teacher, l.subject]);
+    });
+    
+    const sheetData = [["Day", "Period", "Teacher", "Subject"]];
+    uniqueLessons.forEach(l => sheetData.push([l.day, `P${l.period}`, l.teacher, l.subject]));
+    
+    const sheet = XLSX.utils.aoa_to_sheet(sheetData);
+    const name = klass.replace(/[\\/*?:[\]]/g, "").substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, sheet, name);
+  }
+  
+  const masterSheet = XLSX.utils.aoa_to_sheet(masterData);
+  XLSX.utils.book_append_sheet(wb, masterSheet, "Master_Summary");
+  
+  XLSX.writeFile(wb, `summary_timetable_${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.xlsx`);
+  showMessage("📊 Summary Excel exported!", "ok");
+}
+
+function exportTimetableExcel(wb) {
+  const classTeacherInfo = {};
+  for (const entry of entries) {
+    if (!classTeacherInfo[entry.klass]) {
+      classTeacherInfo[entry.klass] = { classTeacher: '', coClassTeacher: '' };
+    }
+    if (entry.classTeacher) classTeacherInfo[entry.klass].classTeacher = entry.classTeacher;
+    if (entry.coClassTeacher) classTeacherInfo[entry.klass].coClassTeacher = entry.coClassTeacher;
+  }
+  
+  const headers = ["Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period} ${s.start}`)];
+  const consData = [headers];
+  for (const day of DAYS) {
+    const row = [day];
+    for (const slot of schedule.slots) {
+      if (slot.period === "break") { 
+        row.push("BREAK"); 
+      } else {
+        const lessons = schedule.grid[day][slot.period] || [];
+        if (lessons.length === 0) { 
+          row.push("-"); 
+        } else {
+          row.push(lessons.map(l => 
+            `${l.subject} (${l.klass}-${l.teacher})${isLessonLocked(l) ? ' 🔒' : ''}${l._forced ? ' ⚠️' : ''}`
+          ).join("; "));
+        }
+      }
+    }
+    consData.push(row);
+  }
+  const consSheet = XLSX.utils.aoa_to_sheet(consData);
+  XLSX.utils.book_append_sheet(wb, consSheet, "Consolidated");
+  
+  const ctData = [["Class", "Class Teacher", "Co-Class Teacher"]];
+  const sortedClasses = Object.keys(classTeacherInfo).sort((a, b) => (parseInt(a)||0) - (parseInt(b)||0));
+  for (const klass of sortedClasses) {
+    const info = classTeacherInfo[klass];
+    ctData.push([klass, info.classTeacher || '-', info.coClassTeacher || '-']);
+  }
+  const ctSheet = XLSX.utils.aoa_to_sheet(ctData);
+  XLSX.utils.book_append_sheet(wb, ctSheet, "Class_Teachers");
+  
+  const teachers = [...new Set(entries.map(e => e.teacher))];
+  for (const teacher of teachers) {
+    const view = { type: "teacher", name: teacher };
+    const data = [["Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period} ${s.start}`)]];
+    for (const day of DAYS) {
+      const row = [day];
+      for (const slot of schedule.slots) {
+        if (slot.period === "break") { 
+          row.push("BREAK"); 
+        } else {
+          const lessons = lessonsAt(day, slot.period, view);
+          if (lessons.length === 0) { 
+            row.push("-"); 
+          } else {
+            row.push(lessons.map(l => 
+              `${l.subject} (${l.klass})${isLessonLocked(l) ? ' 🔒' : ''}${l._forced ? ' ⚠️' : ''}`
+            ).join("; "));
+          }
+        }
+      }
+      data.push(row);
+    }
+    const sheet = XLSX.utils.aoa_to_sheet(data);
+    const name = teacher.replace(/[\\/*?:[\]]/g, "").substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, sheet, name);
+  }
+  
+  const classes = [...new Set(entries.map(e => e.klass))];
+  for (const klass of classes) {
+    const view = { type: "class", name: klass };
+    const data = [["Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period} ${s.start}`)]];
+    for (const day of DAYS) {
+      const row = [day];
+      for (const slot of schedule.slots) {
+        if (slot.period === "break") { 
+          row.push("BREAK"); 
+        } else {
+          const lessons = lessonsAt(day, slot.period, view);
+          if (lessons.length === 0) { 
+            row.push("-"); 
+          } else {
+            row.push(lessons.map(l => 
+              `${l.subject} (${l.teacher})${isLessonLocked(l) ? ' 🔒' : ''}${l._forced ? ' ⚠️' : ''}`
+            ).join("; "));
+          }
+        }
+      }
+      data.push(row);
+    }
+    const sheet = XLSX.utils.aoa_to_sheet(data);
+    const name = `Class_${klass}`.replace(/[\\/*?:[\]]/g, "").substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, sheet, name);
+  }
+  
+  XLSX.writeFile(wb, `timetable_${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.xlsx`);
+  showMessage("📊 Excel exported!", "ok");
 }
 
 // ============================================
@@ -3890,73 +4541,13 @@ document.getElementById("import-btn")?.addEventListener("click", () => {
   input.click();
 });
 
-document.getElementById("excel-btn")?.addEventListener("click", () => {
-  if (!schedule) { showMessage('Generate timetable first', "error"); return; }
-  const wb = XLSX.utils.book_new();
-  const classTeacherInfo = {};
-  for (const entry of entries) {
-    if (!classTeacherInfo[entry.klass]) classTeacherInfo[entry.klass] = { classTeacher: '', coClassTeacher: '' };
-    if (entry.classTeacher) classTeacherInfo[entry.klass].classTeacher = entry.classTeacher;
-    if (entry.coClassTeacher) classTeacherInfo[entry.klass].coClassTeacher = entry.coClassTeacher;
-  }
-  const headers = ["Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period} ${s.start}`)];
-  const consData = [headers];
-  for (const day of DAYS) {
-    const row = [day];
-    for (const slot of schedule.slots) {
-      if (slot.period === "break") { row.push("BREAK"); } else {
-        const lessons = schedule.grid[day][slot.period] || [];
-        if (lessons.length === 0) { row.push("-"); } else {
-          row.push(lessons.map(l => `${l.subject} (${l.klass}-${l.teacher})${isLessonLocked(l) ? ' 🔒' : ''}${l._forced ? ' ⚠️' : ''}`).join("; "));
-        }
-      }
-    }
-    consData.push(row);
-  }
-  const consSheet = XLSX.utils.aoa_to_sheet(consData);
-  XLSX.utils.book_append_sheet(wb, consSheet, "Consolidated");
-  const ctData = [["Class", "Class Teacher", "Co-Class Teacher"]];
-  const sortedClasses = Object.keys(classTeacherInfo).sort((a, b) => (parseInt(a)||0) - (parseInt(b)||0));
-  for (const klass of sortedClasses) {
-    const info = classTeacherInfo[klass];
-    ctData.push([klass, info.classTeacher || '-', info.coClassTeacher || '-']);
-  }
-  const ctSheet = XLSX.utils.aoa_to_sheet(ctData);
-  XLSX.utils.book_append_sheet(wb, ctSheet, "Class Teachers");
-  const teachers = [...new Set(entries.map(e => e.teacher))];
-  for (const teacher of teachers) {
-    const view = { type: "teacher", name: teacher };
-    const data = [["Day", ...schedule.slots.map(s => s.period === "break" ? "Break" : `P${s.period} ${s.start}`)]];
-    for (const day of DAYS) {
-      const row = [day];
-      for (const slot of schedule.slots) {
-        if (slot.period === "break") { row.push("BREAK"); } else {
-          const lessons = lessonsAt(day, slot.period, view);
-          if (lessons.length === 0) { row.push("-"); } else {
-            row.push(lessons.map(l => `${l.subject} (${l.klass})${isLessonLocked(l) ? ' 🔒' : ''}${l._forced ? ' ⚠️' : ''}`).join("; "));
-          }
-        }
-      }
-      data.push(row);
-    }
-    const sheet = XLSX.utils.aoa_to_sheet(data);
-    const name = teacher.replace(/[\\/*?:[\]]/g, "").substring(0, 31);
-    XLSX.utils.book_append_sheet(wb, sheet, name);
-  }
-  XLSX.writeFile(wb, `timetable_${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.xlsx`);
-  showMessage("Excel downloaded!", "ok");
-});
-
 // ============================================
 // LOAD DEFAULT DATA FROM REMOTE JSON (NEW USER)
 // ============================================
 async function loadRemoteData() {
-    // 1. If user already has data in their browser, just load it and stop
     if (localStorage.getItem("timetableStudioData")) {
         loadFromLocalStorage();
         renderList();
-        
-        // If data is loaded but no grid exists yet, auto-generate it
         setTimeout(() => {
             if (entries.length > 0 && !schedule) {
                 generate();
@@ -3965,39 +4556,28 @@ async function loadRemoteData() {
         return; 
     }
 
-    // 2. If user is BRAND NEW, fetch from GitHub
     try {
         const response = await fetch('default_data.json');
         const data = await response.json();
         localStorage.setItem("timetableStudioData", JSON.stringify(data));
         loadFromLocalStorage(); 
         renderList();
-        
-        // 3. Auto-generate the grid immediately for the new user
         setTimeout(() => {
             if (entries.length > 0) {
                 generate(); 
                 showMessage("✅ Your timetable is ready!", "ok");
             }
         }, 250); 
-        
     } catch (err) {
         console.warn("No default data found on server. Starting fresh.");
     }
 }
 
-// ============================================
-// INITIALIZATION ON PAGE LOAD
-// ============================================
 document.addEventListener("DOMContentLoaded", function() {
   initTabs();
   initSubstitutionPanel();
   
-  // Load remote data first (for new users)
   loadRemoteData(); 
-  
-  // Note: loadFromLocalStorage() is now handled inside loadRemoteData() 
-  // for new users. However, we keep it here just in case the fetch fails.
   loadFromLocalStorage(); 
   
   populateDropdownLists();
@@ -4010,84 +4590,215 @@ document.addEventListener("DOMContentLoaded", function() {
   initContextMenu();
   updateUndoMenu();
   
+  // Start in user mode
+  applyUserMode();
+  
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('today-name').textContent = dateStr;
 });
 
+
 // ============================================
-// ADMIN/USER MODE TOGGLE
+// SIMPLE ADMIN LINK - Show Lock Screen
 // ============================================
-document.addEventListener("DOMContentLoaded", function() {
-  const toggle = document.getElementById("admin-toggle");
-  const adminSections = document.querySelectorAll(".hide-on-user");
-  const userTabs = document.getElementById("user-view-tabs");
+document.getElementById("admin-link")?.addEventListener("click", function(e) {
+  e.preventDefault();
+  document.getElementById("admin-lock-overlay").classList.remove("hidden");
+  document.getElementById("admin-password-input").focus();
+  document.getElementById("admin-password-input").value = "";
+  document.getElementById("admin-error-msg").textContent = "";
+});
+
+
+// ============================================
+// PRINT SUMMARY AS A3 PDF WITH P7 DAY INFO
+// ============================================
+document.getElementById("print-summary-btn")?.addEventListener("click", function() {
+  if (!schedule) {
+    showMessage('Generate timetable first', "error");
+    return;
+  }
   
-  if (toggle) {
-    toggle.addEventListener("change", function() {
-      const isAdmin = this.checked;
+  showLoading();
+  
+  setTimeout(() => {
+    try {
+      const { jsPDF } = window.jspdf;
       
-      // Toggle Admin Sections (Add Teachers / Setup / Toolbar / Generate)
-      adminSections.forEach(el => {
-        if (isAdmin) el.classList.remove("hidden-admin");
-        else el.classList.add("hidden-admin");
+      // A3 size in points: 1190 x 842 (landscape)
+      const doc = new jsPDF({ 
+        orientation: "landscape", 
+        unit: "pt", 
+        format: "a3" 
       });
       
-      // Toggle User Tabs
-      if (isAdmin) {
-        userTabs.classList.remove("active");
-        // Reset to full grid view for admin
-        document.getElementById("view-selector").value = "consolidated";
-        if (schedule) renderTimetables();
-      } else {
-        userTabs.classList.add("active");
-        // Default to summary view for users
-        document.getElementById("view-selector").value = "summary";
-        if (schedule) renderTimetables();
-      }
-    });
-  }
-
-  // ============================================
-  // USER TAB CLICK EVENTS
-  // ============================================
-  document.querySelectorAll(".user-tab-btn").forEach(btn => {
-    btn.addEventListener("click", function() {
-      // UI: Update active tab styling
-      document.querySelectorAll(".user-tab-btn").forEach(b => b.classList.remove("active"));
-      this.classList.add("active");
+      // Title
+      doc.setFontSize(24);
+      doc.setTextColor(74, 108, 247);
+      doc.text("Summary Timetable", 40, 40);
       
-      const view = this.dataset.view;
+      doc.setFontSize(12);
+      doc.setTextColor(100);
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, 40, 65);
       
-      // Action: Switch the view in the backend
-      if (view === "summary") {
-        document.getElementById("view-selector").value = "summary";
-        if (schedule) renderTimetables();
-      } else if (view === "class") {
-        // Show class selector and filter
-        const classes = [...new Set(entries.map(e => e.klass))];
-        if (classes.length === 0) { showMessage("No classes found", "warn"); return; }
-        const selected = prompt(`Select a Class:\n${classes.join(", ")}`);
-        if (selected && classes.includes(selected)) {
-          document.getElementById("view-selector").value = `class:${selected}`;
-          if (schedule) renderTimetables();
+      // Get all classes
+      const classes = [...new Set(entries.map(e => e.klass))].sort((a, b) => {
+        const numA = parseInt(a) || 0;
+        const numB = parseInt(b) || 0;
+        return numA - numB;
+      });
+      
+      // Build the summary table data
+      let tableData = [];
+      let headers = ["Class"];
+      
+      // Add period headers (just P1, P2, etc. without days)
+      for (const slot of schedule.slots) {
+        if (slot.period === "break") {
+          headers.push("Break");
+        } else {
+          headers.push(`P${slot.period}`);
         }
-      } else if (view === "teacher") {
-        // Show teacher selector and filter
-        const teachers = [...new Set(entries.map(e => e.teacher))];
-        if (teachers.length === 0) { showMessage("No teachers found", "warn"); return; }
-        const selected = prompt(`Select a Teacher:\n${teachers.join(", ")}`);
-        if (selected && teachers.includes(selected)) {
-          document.getElementById("view-selector").value = `teacher:${selected}`;
-          if (schedule) renderTimetables();
-        }
-      } else if (view === "workload") {
-        showWorkloadSummary();
       }
-    });
-  });
+      
+      // For each class, build row data
+      for (const klass of classes) {
+        let row = [klass];
+        
+        for (const slot of schedule.slots) {
+          if (slot.period === "break") {
+            row.push("Lunch");
+            continue;
+          }
+          
+          let foundLessons = [];
+          
+          for (const day of DAYS) {
+            const lessons = schedule.grid[day]?.[slot.period] || [];
+            const classLessons = lessons.filter(l => l.klass === klass);
+            if (classLessons.length > 0) {
+              classLessons.forEach(l => {
+                foundLessons.push({ ...l, day: day });
+              });
+            }
+          }
+          
+          if (foundLessons.length === 0) {
+            row.push("");
+          } else {
+            // Deduplicate
+            const uniqueMap = new Map();
+            foundLessons.forEach(l => {
+              const key = `${l.teacher}|||${l.subject}`;
+              if (!uniqueMap.has(key)) {
+                uniqueMap.set(key, l);
+              }
+            });
+            const uniqueLessons = Array.from(uniqueMap.values());
+            
+            // Format: Teacher (Subject) on one line
+            // For P7, add day in brackets
+            let cellContent = uniqueLessons.map(l => {
+              let text = `${l.teacher} (${l.subject})`;
+              // If this is P7, add the day
+              if (slot.period === 7) {
+                text += ` [${l.day}]`;
+              }
+              return text;
+            }).join("\n");
+            row.push(cellContent);
+          }
+        }
+        tableData.push(row);
+      }
+      
+      // Calculate column widths - reduce cell width
+      const colCount = headers.length;
+      const pageWidth = doc.internal.pageSize.width - 80; // 40pt margin each side
+      const colWidth = Math.min(pageWidth / colCount, 70); // Reduced max width to 70pt
+      
+      // Create the table with better formatting for A3
+      doc.autoTable({
+        head: [headers],
+        body: tableData,
+        startY: 80,
+        styles: {
+          fontSize: 9,  // Increased from 7 to 9
+          cellPadding: 2,  // Reduced from 3 to 2
+          valign: 'middle',
+          halign: 'center',
+          lineColor: [200, 200, 200],
+          lineWidth: 0.3,
+        },
+        headStyles: {
+          fillColor: [74, 108, 247],
+          textColor: [255, 255, 255],
+          fontSize: 10,  // Increased from 8 to 10
+          fontStyle: 'bold',
+          halign: 'center',
+          valign: 'middle',
+        },
+        columnStyles: {
+          0: { cellWidth: 45, fontSize: 10, fontStyle: 'bold', halign: 'left' }, // Reduced from 50 to 45
+        },
+        bodyStyles: {
+          valign: 'middle',
+          halign: 'center',
+        },
+        didDrawCell: function(data) {
+          // If it's a break column, style it
+          if (data.column.index > 0 && headers[data.column.index] === "Break") {
+            data.cell.styles.fillColor = [245, 245, 245];
+            data.cell.styles.fontStyle = 'italic';
+            data.cell.styles.textColor = [150, 150, 150];
+          }
+          // Highlight P7 column
+          if (headers[data.column.index] === "P7") {
+            data.cell.styles.fillColor = [255, 243, 205];
+          }
+        },
+        margin: { left: 40, right: 40, top: 80, bottom: 30 },
+        pageBreak: 'auto',
+        showHead: 'everyPage',
+        tableWidth: 'auto',
+      });
+      
+      // Add footer with page number
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${totalPages}`, doc.internal.pageSize.width - 60, doc.internal.pageSize.height - 20);
+        doc.text("Timetable Studio", 40, doc.internal.pageSize.height - 20);
+      }
+      
+      // Save and open for print
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      
+      // Open in new window for printing
+      const printWindow = window.open(pdfUrl, '_blank');
+      if (printWindow) {
+        printWindow.onload = function() {
+          setTimeout(function() {
+            printWindow.print();
+          }, 500);
+        };
+      }
+      
+      hideLoading();
+      showMessage("📄 Summary PDF generated! Opening for print...", "ok");
+      
+    } catch (e) {
+      console.error('Print error:', e);
+      hideLoading();
+      showMessage("Error generating summary: " + e.message, "error");
+    }
+  }, 100);
 });
-  
+
 </script>
 </body>
 </html>
