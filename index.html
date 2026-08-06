@@ -1037,6 +1037,93 @@ footer {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+
+.dsp-card { margin-top: 16px; }
+.dsp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.dsp-toolbar .field { min-width: 180px; }
+.dsp-table-wrap { overflow-x: auto; }
+.dsp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.dsp-table th {
+  background: var(--table-header);
+  border: 1px solid var(--table-border);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+}
+.dsp-table td {
+  border: 1px solid var(--table-border);
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+.dsp-table tr.dsp-absent-row { background: var(--danger-light); }
+.dsp-table tr:nth-child(even):not(.dsp-absent-row) { background: var(--alt-row); }
+.dsp-name-input {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.dsp-name-input:hover { border-color: var(--input-border); background: var(--input-bg); }
+.dsp-name-input:focus { outline: none; border-color: var(--accent); background: var(--input-bg); box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1); }
+.dsp-periods-badge {
+  display: inline-block;
+  min-width: 26px;
+  text-align: center;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 0.8rem;
+}
+.dsp-absent-toggle { width: 18px; height: 18px; accent-color: var(--danger); cursor: pointer; }
+.dsp-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 3px 0;
+}
+.dsp-sub-row + .dsp-sub-row { border-top: 1px dashed var(--border-light); padding-top: 6px; margin-top: 2px; }
+.dsp-sub-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  min-width: 130px;
+  font-weight: 600;
+}
+.dsp-sub-select {
+  flex: 1 1 160px;
+  min-width: 140px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-family: inherit;
+}
+.dsp-sub-select.dsp-unassigned { border-color: var(--danger); background: var(--danger-light); }
+.dsp-sub-select.dsp-overridden { border-color: var(--warning); }
+.dsp-empty-note { color: var(--text-light); font-size: 0.78rem; }
+
 @media (max-width: 768px) {
   .substitution-grid { grid-template-columns: 1fr; }
   body { font-size: 14px; }
@@ -1208,6 +1295,21 @@ footer {
   border-color: var(--accent);
   color: #fff;
 }
+
+
+/* Substitution button animations */
+@keyframes pulse-sub {
+  0% { box-shadow: 0 0 0 0 rgba(238, 90, 36, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(238, 90, 36, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(238, 90, 36, 0); }
+}
+
+@keyframes bounce-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+
 </style>
 </head>
 <body>
@@ -1429,6 +1531,28 @@ footer {
           <button class="view-toggle-btn active" data-view="schedule" onclick="setViewMode('schedule')">📋 Grid</button>
           <button class="view-toggle-btn" data-view="teacher" onclick="setViewMode('teacher')">📊 Teacher</button>
           <button class="view-toggle-btn" data-view="summary" onclick="setViewMode('summary')">📋 Summary</button>
+		<!-- NEW SUBSTITUTION BUTTON - ADD THIS -->
+  <button class="view-toggle-btn" data-view="substitution" onclick="setViewMode('substitution')" 
+          style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); 
+                 color: white !important; border-color: #ee5a24; 
+                 box-shadow: 0 0 20px rgba(238, 90, 36, 0.3);
+                 animation: pulse-sub 2s infinite;
+                 font-weight: 700; position: relative;
+                 text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                 padding-right: 40px;
+                 transition: all 0.3s ease;"
+          onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 30px rgba(238,90,36,0.6)';"
+          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 20px rgba(238,90,36,0.3)';">
+    🔄 Substitution
+    <span style="position: absolute; top: -8px; right: -8px; 
+                 background: #ffd93d; color: #333; 
+                 border-radius: 50%; padding: 2px 8px; 
+                 font-size: 10px; font-weight: 800;
+                 box-shadow: 0 2px 10px rgba(255,217,61,0.5);
+                 animation: bounce-badge 1.5s infinite;">
+      ⚡
+    </span>
+  </button>
         </div>
         <button id="drag-mode-toggle" class="btn drag-mode active small" onclick="toggleDragMode()">🔄 Swap</button>
       </div>
@@ -1490,6 +1614,32 @@ footer {
         </div>
       </div>
     </div>
+
+    <div class="card dsp-card">
+      <div class="card-head">
+        <div class="step">📋</div>
+        <div>
+          <h2>Daily Substitution Planner</h2>
+          <p>Mark absent teachers, review their periods, and auto-assign the least-loaded free teacher — fully editable.</p>
+        </div>
+      </div>
+      <div class="dsp-toolbar">
+        <div class="field">
+          <span>Day</span>
+          <select id="dsp-day-select">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+          </select>
+        </div>
+        <button id="dsp-refresh-btn" class="btn ghost small">🔄 Refresh Suggestions</button>
+        <span id="dsp-summary" style="font-size:0.8rem;color:var(--text-muted);"></span>
+      </div>
+      <div id="dsp-table-container" class="dsp-table-wrap"></div>
+    </div>
   </div>
 </div>
 
@@ -1516,6 +1666,8 @@ let schedule = null;
 let activeView = "consolidated";
 let viewMode = "schedule";
 let substitutionHistory = [];
+let dspAbsent = {};      // { [day]: Set(teacherName) }
+let dspOverrides = {};   // { "day|absentTeacher|period": substituteTeacherName }
 let dragMode = 'swap';
 let lockedLessons = {};
 let undoStack = [];
@@ -3520,7 +3672,272 @@ function initSubstitutionPanel() {
       showMessage("History cleared", "ok");
     }
   });
+
+  loadDspState();
+  document.getElementById("dsp-day-select")?.addEventListener("change", renderDailySubPlanner);
+  document.getElementById("dsp-refresh-btn")?.addEventListener("click", () => {
+    const day = document.getElementById("dsp-day-select")?.value || DAYS[0];
+    // Clear manual overrides for this day so suggestions are recomputed fresh
+    Object.keys(dspOverrides).forEach(k => { if (k.startsWith(day + '|')) delete dspOverrides[k]; });
+    saveDspState();
+    renderDailySubPlanner();
+    showMessage("Suggestions refreshed", "ok");
+  });
+  renderDailySubPlanner();
 }
+
+// ============================================
+// DAILY SUBSTITUTION PLANNER
+// ============================================
+
+function loadDspState() {
+  try {
+    const raw = localStorage.getItem("dspState");
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    dspAbsent = {};
+    for (const day in (parsed.absent || {})) dspAbsent[day] = new Set(parsed.absent[day]);
+    dspOverrides = parsed.overrides || {};
+  } catch (e) { /* ignore corrupt state */ }
+}
+
+function saveDspState() {
+  try {
+    const absentPlain = {};
+    for (const day in dspAbsent) absentPlain[day] = [...dspAbsent[day]];
+    localStorage.setItem("dspState", JSON.stringify({ absent: absentPlain, overrides: dspOverrides }));
+  } catch (e) { /* ignore quota errors */ }
+}
+
+// Count how many periods a teacher is teaching on a given day, for every teacher.
+function computeDailyWorkload(day) {
+  const map = new Map();
+  getAllTeachers().forEach(t => map.set(t, 0));
+  if (!schedule?.grid?.[day]) return map;
+  for (const period in schedule.grid[day]) {
+    for (const l of schedule.grid[day][period]) {
+      map.set(l.teacher, (map.get(l.teacher) || 0) + 1);
+    }
+  }
+  return map;
+}
+
+function isTeacherFreeAt(teacher, day, period) {
+  const lessons = schedule?.grid?.[day]?.[period] || [];
+  return !lessons.some(l => l.teacher === teacher);
+}
+
+// Suggest a substitute for every period the absent teacher was due to teach on `day`.
+// Prioritises the teacher with the LEAST periods that day; once picked for one period,
+// their tally is bumped so the *next* period prefers a different, still-lightly-loaded teacher.
+function suggestSubstitutesForTeacher(absentTeacher, day, absentSet) {
+  if (!schedule?.grid?.[day]) return [];
+  const absentLessons = [];
+  for (const period in schedule.grid[day]) {
+    for (const l of schedule.grid[day][period]) {
+      if (l.teacher === absentTeacher) {
+        absentLessons.push({ period: parseInt(period, 10), subject: l.subject, klass: l.klass });
+      }
+    }
+  }
+  absentLessons.sort((a, b) => a.period - b.period);
+  if (absentLessons.length === 0) return [];
+
+  const workload = computeDailyWorkload(day);
+  const pool = getAllTeachers().filter(t => t !== absentTeacher && !absentSet.has(t));
+
+  return absentLessons.map(lesson => {
+    const candidates = pool
+      .filter(t => isTeacherFreeAt(t, day, lesson.period))
+      .sort((a, b) => {
+        const wa = workload.get(a) || 0, wb = workload.get(b) || 0;
+        if (wa !== wb) return wa - wb;
+        const aKnows = entries.some(e => e.teacher === a && e.subject === lesson.subject) ? 1 : 0;
+        const bKnows = entries.some(e => e.teacher === b && e.subject === lesson.subject) ? 1 : 0;
+        if (aKnows !== bKnows) return bKnows - aKnows;
+        return a.localeCompare(b);
+      });
+    const chosen = candidates[0] || null;
+    if (chosen) workload.set(chosen, (workload.get(chosen) || 0) + 1);
+    const slot = schedule.slots.find(s => s.period === lesson.period);
+    return { ...lesson, periodDisplay: slot ? slot.start : `P${lesson.period}`, suggested: chosen };
+  });
+}
+
+function renderDailySubPlanner() {
+  const container = document.getElementById("dsp-table-container");
+  const summaryEl = document.getElementById("dsp-summary");
+  if (!container) return;
+
+  if (!schedule) {
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-light);font-size:0.9rem;">Generate a timetable first to plan substitutions.</div>`;
+    if (summaryEl) summaryEl.textContent = "";
+    return;
+  }
+
+  const day = document.getElementById("dsp-day-select")?.value || DAYS[0];
+  const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
+  if (!dspAbsent[day]) dspAbsent[day] = new Set();
+  const absentSet = dspAbsent[day];
+  const workloadToday = computeDailyWorkload(day);
+
+  let uncovered = 0, totalAbsentPeriods = 0;
+
+  let html = `<table class="dsp-table"><thead><tr>
+    <th style="min-width:180px;">Teacher</th>
+    <th style="width:90px;text-align:center;">Periods (${esc(day)})</th>
+    <th style="width:70px;text-align:center;">Absent</th>
+    <th style="min-width:280px;">Substitution Plan</th>
+  </tr></thead><tbody>`;
+
+  for (const teacher of teachers) {
+    const periodsToday = workloadToday.get(teacher) || 0;
+    const isAbsent = absentSet.has(teacher);
+    let subCell;
+
+    if (!isAbsent) {
+      subCell = `<span class="dsp-empty-note">—</span>`;
+    } else if (periodsToday === 0) {
+      subCell = `<span class="dsp-empty-note">No periods scheduled this day — no coverage needed.</span>`;
+    } else {
+      const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
+      const otherTeachers = teachers.filter(t => t !== teacher && !absentSet.has(t));
+      subCell = suggestions.map(s => {
+        const overrideKey = `${day}|${teacher}|${s.period}`;
+        const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey);
+        const currentVal = hasOverride ? dspOverrides[overrideKey] : (s.suggested || "");
+        totalAbsentPeriods++;
+        if (!currentVal) uncovered++;
+        const selectClasses = ["dsp-sub-select"];
+        if (!currentVal) selectClasses.push("dsp-unassigned");
+        else if (hasOverride && currentVal !== s.suggested) selectClasses.push("dsp-overridden");
+        const options = [`<option value="">-- Unassigned --</option>`]
+          .concat(otherTeachers.map(t => `<option value="${esc(t)}" ${t === currentVal ? "selected" : ""}>${esc(t)}</option>`))
+          .join("");
+        return `<div class="dsp-sub-row">
+          <span class="dsp-sub-label">P${s.period} · ${esc(s.periodDisplay)}<br>${esc(s.klass)} — ${esc(s.subject)}</span>
+          <select class="${selectClasses.join(' ')}" data-override-key="${esc(overrideKey)}" onchange="setDspOverride(this)">
+            ${options}
+          </select>
+        </div>`;
+      }).join("");
+    }
+
+    html += `<tr class="${isAbsent ? 'dsp-absent-row' : ''}" data-teacher="${esc(teacher)}">
+      <td><input type="text" class="dsp-name-input" value="${esc(teacher)}" title="Click to rename this teacher everywhere" onchange="renameTeacherFromPlanner(this,'${esc(teacher)}')"></td>
+      <td style="text-align:center;"><span class="dsp-periods-badge">${periodsToday}</span></td>
+      <td style="text-align:center;"><input type="checkbox" class="dsp-absent-toggle" ${isAbsent ? "checked" : ""} onchange="toggleDspAbsent('${esc(teacher)}', this.checked)"></td>
+      <td>${subCell}</td>
+    </tr>`;
+  }
+  html += "</tbody></table>";
+  container.innerHTML = html;
+
+  if (summaryEl) {
+    const absentCount = absentSet.size;
+    summaryEl.textContent = absentCount === 0
+      ? "No teachers marked absent."
+      : `${absentCount} absent · ${totalAbsentPeriods} period(s) to cover${uncovered ? ` · ⚠️ ${uncovered} unassigned` : " · ✅ all assigned"}`;
+  }
+}
+window.renderDailySubPlanner = renderDailySubPlanner;
+
+function toggleDspAbsent(teacher, checked) {
+  const day = document.getElementById("dsp-day-select")?.value || DAYS[0];
+  if (!dspAbsent[day]) dspAbsent[day] = new Set();
+  if (checked) {
+    dspAbsent[day].add(teacher);
+  } else {
+    dspAbsent[day].delete(teacher);
+    // Drop any leftover overrides tied to this teacher's absence on this day
+    Object.keys(dspOverrides).forEach(k => { if (k.startsWith(`${day}|${teacher}|`)) delete dspOverrides[k]; });
+  }
+  saveDspState();
+  renderDailySubPlanner();
+}
+window.toggleDspAbsent = toggleDspAbsent;
+
+function setDspOverride(selectEl) {
+  const key = selectEl.dataset.overrideKey;
+  dspOverrides[key] = selectEl.value;
+  saveDspState();
+  renderDailySubPlanner();
+}
+window.setDspOverride = setDspOverride;
+
+function renameTeacherFromPlanner(inputEl, oldName) {
+  const newName = inputEl.value.trim();
+  if (!newName) { inputEl.value = oldName; showMessage("Teacher name can't be empty", "warn"); return; }
+  if (newName === oldName) return;
+  if (getAllTeachers().includes(newName)) {
+    inputEl.value = oldName;
+    showMessage(`A teacher named "${newName}" already exists`, "error");
+    return;
+  }
+  renameTeacherGlobally(oldName, newName);
+  showMessage(`Renamed "${oldName}" → "${newName}"`, "ok");
+  renderDailySubPlanner();
+}
+window.renameTeacherFromPlanner = renameTeacherFromPlanner;
+
+// Renames a teacher everywhere they're referenced: entries, the generated schedule,
+// locked lessons, dropdown suggestions, substitution history and the planner's own state.
+function renameTeacherGlobally(oldName, newName) {
+  entries.forEach(e => {
+    if (e.teacher === oldName) e.teacher = newName;
+    if (e.classTeacher === oldName) e.classTeacher = newName;
+    if (e.coClassTeacher === oldName) e.coClassTeacher = newName;
+  });
+
+  if (schedule?.grid) {
+    for (const day of DAYS) {
+      for (const period in (schedule.grid[day] || {})) {
+        for (const l of schedule.grid[day][period]) {
+          if (l.teacher === oldName) l.teacher = newName;
+        }
+      }
+    }
+  }
+
+  const newLocked = {};
+  for (const key in lockedLessons) {
+    const val = lockedLessons[key];
+    if (val && val.teacher === oldName) val.teacher = newName;
+    const newKey = key.startsWith(oldName + "|") ? newName + key.slice(oldName.length) : key;
+    newLocked[newKey] = val;
+  }
+  lockedLessons = newLocked;
+
+  const idx = dropdownOptions.teachers.indexOf(oldName);
+  if (idx > -1) dropdownOptions.teachers[idx] = newName;
+  else addOptionIfNew("teachers", newName);
+
+  substitutionHistory.forEach(h => {
+    if (h.absentTeacher === oldName) h.absentTeacher = newName;
+    if (h.substituteTeacher === oldName) h.substituteTeacher = newName;
+  });
+
+  for (const day in dspAbsent) {
+    if (dspAbsent[day].has(oldName)) { dspAbsent[day].delete(oldName); dspAbsent[day].add(newName); }
+  }
+  const newOverrides = {};
+  for (const key in dspOverrides) {
+    const parts = key.split("|"); // [day, absentTeacher, period]
+    if (parts[1] === oldName) parts[1] = newName;
+    const val = dspOverrides[key] === oldName ? newName : dspOverrides[key];
+    newOverrides[parts.join("|")] = val;
+  }
+  dspOverrides = newOverrides;
+
+  saveToLocalStorage();
+  saveSubstitutionHistory();
+  saveDspState();
+  populateDropdownLists();
+  populateSubstitutionDropdowns();
+  renderList();
+  if (typeof renderTimetables === "function") renderTimetables();
+}
+window.renameTeacherGlobally = renameTeacherGlobally;
 
 // ============================================
 // CONTEXT MENU
@@ -3722,7 +4139,7 @@ function initTabs() {
       tab.classList.add("active");
       document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
       document.getElementById(`${target}-tab`).classList.add("active");
-      if (target === "substitution") populateSubstitutionDropdowns();
+      if (target === "substitution") { populateSubstitutionDropdowns(); renderDailySubPlanner(); }
     });
   });
 }
@@ -4544,8 +4961,7 @@ document.getElementById("import-btn")?.addEventListener("click", () => {
 // ============================================
 // LOAD DEFAULT DATA FROM REMOTE JSON (NEW USER)
 // ============================================
-const APP_VERSION = "2.2"; // ← ADD THIS LINE HERE (right at the top of the function)
-	async function loadRemoteData() {
+async function loadRemoteData() {
     if (localStorage.getItem("timetableStudioData")) {
         loadFromLocalStorage();
         renderList();
@@ -4613,8 +5029,9 @@ document.getElementById("admin-link")?.addEventListener("click", function(e) {
 
 
 // ============================================
-// PRINT SUMMARY AS A3 PDF WITH P7 DAY INFO
+// PRINT SUMMARY AS A3 PDF - ONE PAGE (OPTIMIZED)
 // ============================================
+
 document.getElementById("print-summary-btn")?.addEventListener("click", function() {
   if (!schedule) {
     showMessage('Generate timetable first', "error");
@@ -4634,49 +5051,87 @@ document.getElementById("print-summary-btn")?.addEventListener("click", function
         format: "a3" 
       });
       
-      // Title
-      doc.setFontSize(24);
+      // ========================================
+      // HARDCODED SCHOOL NAME - CHANGE THIS
+      // ========================================
+      const SCHOOL_NAME = "PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR";
+      
+      const pageWidth = doc.internal.pageSize.width;
+      const centerX = pageWidth / 2;
+      let yPos = 20; // TIGHTEST top margin
+      
+      // ========================================
+      // HEADER - CENTERED (Smallest Font)
+      // ========================================
+      
+      doc.setFontSize(16);     // SMALLER
       doc.setTextColor(74, 108, 247);
-      doc.text("Summary Timetable", 40, 40);
+      doc.text(SCHOOL_NAME, centerX, yPos, { align: 'center' });
+      yPos += 14;             // TIGHTER spacing
       
-      doc.setFontSize(12);
-      doc.setTextColor(100);
-      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, 40, 65);
+      doc.setFontSize(12);     // SMALLER
+      doc.setTextColor(0);
+      doc.text('Summary Timetable', centerX, yPos, { align: 'center' });
+      yPos += 10;             // TIGHTER spacing
       
-      // Get all classes
+      // ========================================
+      // PERIOD TIMES - CORRECT
+      // ========================================
+      function formatTime(hours, minutes) {
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
+      
+      const slots = [
+        { period: 1, startHour: 10, startMin: 55, endHour: 11, endMin: 40, isBreak: false },
+        { period: 2, startHour: 11, startMin: 40, endHour: 12, endMin: 20, isBreak: false },
+        { period: 3, startHour: 12, startMin: 20, endHour: 13, endMin: 0, isBreak: false },
+        { period: 4, startHour: 13, startMin: 0, endHour: 13, endMin: 40, isBreak: false },
+        { period: 'break', startHour: 13, startMin: 40, endHour: 14, endMin: 15, isBreak: true },
+        { period: 5, startHour: 14, startMin: 15, endHour: 15, endMin: 0, isBreak: false },
+        { period: 6, startHour: 15, startMin: 0, endHour: 15, endMin: 40, isBreak: false },
+        { period: 7, startHour: 15, startMin: 40, endHour: 16, endMin: 20, isBreak: false }
+      ];
+      
+      // ========================================
+      // BUILD HEADERS
+      // ========================================
+      let headers = ["Class"];
+      
+      for (const slot of slots) {
+        if (slot.isBreak) {
+          headers.push("Break");
+        } else {
+          const start = formatTime(slot.startHour, slot.startMin);
+          const end = formatTime(slot.endHour, slot.endMin);
+          headers.push(`P${slot.period}\n${start}-${end}`);
+        }
+      }
+      
+      // ========================================
+      // BUILD TABLE DATA
+      // ========================================
       const classes = [...new Set(entries.map(e => e.klass))].sort((a, b) => {
         const numA = parseInt(a) || 0;
         const numB = parseInt(b) || 0;
         return numA - numB;
       });
       
-      // Build the summary table data
-      let tableData = [];
-      let headers = ["Class"];
+      const tableData = [];
       
-      // Add period headers (just P1, P2, etc. without days)
-      for (const slot of schedule.slots) {
-        if (slot.period === "break") {
-          headers.push("Break");
-        } else {
-          headers.push(`P${slot.period}`);
-        }
-      }
-      
-      // For each class, build row data
       for (const klass of classes) {
         let row = [klass];
         
-        for (const slot of schedule.slots) {
-          if (slot.period === "break") {
-            row.push("Lunch");
+        for (const slot of slots) {
+          if (slot.isBreak) {
+            row.push("☕");
             continue;
           }
           
+          const periodNum = slot.period;
           let foundLessons = [];
           
           for (const day of DAYS) {
-            const lessons = schedule.grid[day]?.[slot.period] || [];
+            const lessons = schedule.grid[day]?.[periodNum] || [];
             const classLessons = lessons.filter(l => l.klass === klass);
             if (classLessons.length > 0) {
               classLessons.forEach(l => {
@@ -4688,7 +5143,6 @@ document.getElementById("print-summary-btn")?.addEventListener("click", function
           if (foundLessons.length === 0) {
             row.push("");
           } else {
-            // Deduplicate
             const uniqueMap = new Map();
             foundLessons.forEach(l => {
               const key = `${l.teacher}|||${l.subject}`;
@@ -4698,12 +5152,10 @@ document.getElementById("print-summary-btn")?.addEventListener("click", function
             });
             const uniqueLessons = Array.from(uniqueMap.values());
             
-            // Format: Teacher (Subject) on one line
-            // For P7, add day in brackets
             let cellContent = uniqueLessons.map(l => {
               let text = `${l.teacher} (${l.subject})`;
-              // If this is P7, add the day
-              if (slot.period === 7) {
+              const specialSubjects = ['Sanskrit', 'IT', 'B&W', 'Music', 'Art', 'PE', 'Games', 'Library', 'Umang', 'CCLE', 'Tejasvi'];
+              if (specialSubjects.some(s => l.subject.includes(s))) {
                 text += ` [${l.day}]`;
               }
               return text;
@@ -4714,72 +5166,77 @@ document.getElementById("print-summary-btn")?.addEventListener("click", function
         tableData.push(row);
       }
       
-      // Calculate column widths - reduce cell width
-      const colCount = headers.length;
-      const pageWidth = doc.internal.pageSize.width - 80; // 40pt margin each side
-      const colWidth = Math.min(pageWidth / colCount, 70); // Reduced max width to 70pt
-      
-      // Create the table with better formatting for A3
+      // ========================================
+      // CREATE TABLE - OPTIMIZED FOR ONE PAGE
+      // ========================================
       doc.autoTable({
         head: [headers],
         body: tableData,
-        startY: 80,
+        startY: yPos + 6,
         styles: {
-          fontSize: 9,  // Increased from 7 to 9
-          cellPadding: 2,  // Reduced from 3 to 2
+          fontSize: 9,          // OPTIMIZED: Good balance
+          cellPadding: 1.5,     // TIGHT padding
           valign: 'middle',
           halign: 'center',
-          lineColor: [200, 200, 200],
-          lineWidth: 0.3,
+          lineColor: [180, 180, 180],
+          lineWidth: 0.2,
         },
         headStyles: {
           fillColor: [74, 108, 247],
           textColor: [255, 255, 255],
-          fontSize: 10,  // Increased from 8 to 10
+          fontSize: 7.5,        // SMALL headers
           fontStyle: 'bold',
           halign: 'center',
           valign: 'middle',
         },
         columnStyles: {
-          0: { cellWidth: 45, fontSize: 10, fontStyle: 'bold', halign: 'left' }, // Reduced from 50 to 45
+          0: { 
+            cellWidth: 35,      // NARROW class column
+            fontSize: 9,
+            fontStyle: 'bold', 
+            halign: 'left' 
+          },
         },
         bodyStyles: {
           valign: 'middle',
           halign: 'center',
+          fontSize: 9,          // OPTIMIZED: Content font
         },
         didDrawCell: function(data) {
-          // If it's a break column, style it
-          if (data.column.index > 0 && headers[data.column.index] === "Break") {
+          if (headers[data.column.index] === "Break") {
             data.cell.styles.fillColor = [245, 245, 245];
             data.cell.styles.fontStyle = 'italic';
             data.cell.styles.textColor = [150, 150, 150];
+            data.cell.styles.fontSize = 9;
           }
-          // Highlight P7 column
-          if (headers[data.column.index] === "P7") {
-            data.cell.styles.fillColor = [255, 243, 205];
+          if (data.cell.raw === "") {
+            data.cell.styles.textColor = [200, 200, 200];
           }
         },
-        margin: { left: 40, right: 40, top: 80, bottom: 30 },
+        margin: { left: 20, right: 20, top: yPos + 6, bottom: 12 },
         pageBreak: 'auto',
         showHead: 'everyPage',
         tableWidth: 'auto',
       });
       
-      // Add footer with page number
+      // ========================================
+      // FOOTER - Page Number Only
+      // ========================================
       const totalPages = doc.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
+        doc.setFontSize(7);
         doc.setTextColor(150, 150, 150);
-        doc.text(`Page ${i} of ${totalPages}`, doc.internal.pageSize.width - 60, doc.internal.pageSize.height - 20);
-        doc.text("Timetable Studio", 40, doc.internal.pageSize.height - 20);
+        doc.text(`Page ${i} of ${totalPages}`, doc.internal.pageSize.width - 50, doc.internal.pageSize.height - 10);
+        doc.text(SCHOOL_NAME, centerX, doc.internal.pageSize.height - 10, { align: 'center' });
       }
       
-      // Save and open for print
+      // ========================================
+      // SAVE AND OPEN FOR PRINT
+      // ========================================
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
       
-      // Open in new window for printing
       const printWindow = window.open(pdfUrl, '_blank');
       if (printWindow) {
         printWindow.onload = function() {
@@ -4799,6 +5256,439 @@ document.getElementById("print-summary-btn")?.addEventListener("click", function
     }
   }, 100);
 });
+
+
+// Override setViewMode to handle substitution view
+const originalSetViewMode = setViewMode;
+setViewMode = function(mode) {
+  if (mode === 'substitution') {
+    // Show substitution planner
+    viewMode = 'substitution';
+    document.querySelectorAll('.view-toggle-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === mode);
+    });
+    
+    const container = document.getElementById('timetable-container');
+    if (container) {
+      // Render the substitution planner in the timetable container
+      container.innerHTML = `
+        <div class="card" style="margin-top:0;">
+          <div class="card-head">
+            <span class="step">🔄</span>
+            <div>
+              <h2>Daily Substitution Planner</h2>
+              <p>Mark teachers absent and auto-assign substitutes based on workload</p>
+            </div>
+          </div>
+          <div class="dsp-toolbar">
+            <div class="field">
+              <span>Day</span>
+              <select id="dsp-day-select-view" class="sub-select" style="width:auto; min-width:150px;">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+              </select>
+            </div>
+            <button id="dsp-refresh-btn-view" class="btn ghost small">🔄 Refresh Suggestions</button>
+<!-- ADD THIS PDF BUTTON -->
+  <button onclick="exportSubstitutionPDF()" class="btn primary small" style="background: #28a745; border-color: #28a745;">
+    📄 Print Substitution
+  </button>
+  
+  <span id="dsp-summary-view" style="font-size:0.8rem;color:var(--text-muted);"></span>
+          </div>
+          <div id="dsp-table-container-view" class="dsp-table-wrap"></div>
+        </div>
+      `;
+      
+      // Initialize the substitution planner in this view
+      initSubstitutionView();
+    }
+    return;
+  }
+  
+  // Call original function for other modes
+  originalSetViewMode(mode);
+};
+
+// Initialize substitution view
+function initSubstitutionView() {
+  const daySelect = document.getElementById('dsp-day-select-view');
+  const refreshBtn = document.getElementById('dsp-refresh-btn-view');
+  const container = document.getElementById('dsp-table-container-view');
+  const summaryEl = document.getElementById('dsp-summary-view');
+  
+  if (!daySelect || !container) return;
+  
+  // Load state
+  loadDspState();
+  
+  // Render function for this view
+  function renderSubstitutionView() {
+    const day = daySelect.value || DAYS[0];
+    renderDailySubPlannerInContainer(container, summaryEl, day);
+  }
+  
+  // Event listeners
+  daySelect.addEventListener('change', renderSubstitutionView);
+  refreshBtn?.addEventListener('click', () => {
+    const day = daySelect.value || DAYS[0];
+    // Clear manual overrides for this day
+    Object.keys(dspOverrides).forEach(k => {
+      if (k.startsWith(day + '|')) delete dspOverrides[k];
+    });
+    saveDspState();
+    renderSubstitutionView();
+    showMessage("Suggestions refreshed", "ok");
+  });
+  
+  // Initial render
+  renderSubstitutionView();
+}
+
+// Render substitution planner in a specific container
+function renderDailySubPlannerInContainer(container, summaryEl, day) {
+  if (!container) return;
+  
+  if (!schedule) {
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-light);font-size:0.9rem;">Generate a timetable first to plan substitutions.</div>`;
+    if (summaryEl) summaryEl.textContent = "";
+    return;
+  }
+  
+  const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
+  if (!dspAbsent[day]) dspAbsent[day] = new Set();
+  const absentSet = dspAbsent[day];
+  const workloadToday = computeDailyWorkload(day);
+  
+  let uncovered = 0, totalAbsentPeriods = 0;
+  
+  let html = `<table class="dsp-table"><thead><tr>
+    <th style="min-width:180px;">Teacher</th>
+    <th style="width:90px;text-align:center;">Periods (${esc(day)})</th>
+    <th style="width:70px;text-align:center;">Absent</th>
+    <th style="min-width:280px;">Substitution Plan</th>
+  </tr></thead><tbody>`;
+  
+  for (const teacher of teachers) {
+    const periodsToday = workloadToday.get(teacher) || 0;
+    const isAbsent = absentSet.has(teacher);
+    let subCell;
+    
+    if (!isAbsent) {
+      subCell = `<span class="dsp-empty-note">—</span>`;
+    } else if (periodsToday === 0) {
+      subCell = `<span class="dsp-empty-note">No periods scheduled this day — no coverage needed.</span>`;
+    } else {
+      const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
+      const otherTeachers = teachers.filter(t => t !== teacher && !absentSet.has(t));
+      subCell = suggestions.map(s => {
+        const overrideKey = `${day}|${teacher}|${s.period}`;
+        const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey);
+        const currentVal = hasOverride ? dspOverrides[overrideKey] : (s.suggested || "");
+        totalAbsentPeriods++;
+        if (!currentVal) uncovered++;
+        const selectClasses = ["dsp-sub-select"];
+        if (!currentVal) selectClasses.push("dsp-unassigned");
+        else if (hasOverride && currentVal !== s.suggested) selectClasses.push("dsp-overridden");
+        const options = [`<option value="">-- Unassigned --</option>`]
+          .concat(otherTeachers.map(t => `<option value="${esc(t)}" ${t === currentVal ? "selected" : ""}>${esc(t)}</option>`))
+          .join("");
+        return `<div class="dsp-sub-row">
+          <span class="dsp-sub-label">P${s.period} · ${esc(s.periodDisplay)}<br>${esc(s.klass)} — ${esc(s.subject)}</span>
+          <select class="${selectClasses.join(' ')}" data-override-key="${esc(overrideKey)}" onchange="setDspOverride(this)">
+            ${options}
+          </select>
+        </div>`;
+      }).join("");
+    }
+    
+    html += `<tr class="${isAbsent ? 'dsp-absent-row' : ''}" data-teacher="${esc(teacher)}">
+      <td><input type="text" class="dsp-name-input" value="${esc(teacher)}" title="Click to rename this teacher everywhere" onchange="renameTeacherFromPlanner(this,'${esc(teacher)}')"></td>
+      <td style="text-align:center;"><span class="dsp-periods-badge">${periodsToday}</span></td>
+      <td style="text-align:center;"><input type="checkbox" class="dsp-absent-toggle" ${isAbsent ? "checked" : ""} onchange="toggleDspAbsent('${esc(teacher)}', this.checked)"></td>
+      <td>${subCell}</td>
+    </tr>`;
+  }
+  html += "</tbody></table>";
+  container.innerHTML = html;
+  
+  if (summaryEl) {
+    const absentCount = absentSet.size;
+    summaryEl.textContent = absentCount === 0
+      ? "No teachers marked absent."
+      : `${absentCount} absent · ${totalAbsentPeriods} period(s) to cover${uncovered ? ` · ⚠️ ${uncovered} unassigned` : " · ✅ all assigned"}`;
+  }
+}
+
+// Override toggleDspAbsent to work with both views
+const originalToggleDspAbsent = toggleDspAbsent;
+toggleDspAbsent = function(teacher, checked) {
+  const daySelect = document.getElementById('dsp-day-select') || document.getElementById('dsp-day-select-view');
+  const day = daySelect?.value || DAYS[0];
+  if (!dspAbsent[day]) dspAbsent[day] = new Set();
+  if (checked) {
+    dspAbsent[day].add(teacher);
+  } else {
+    dspAbsent[day].delete(teacher);
+    Object.keys(dspOverrides).forEach(k => {
+      if (k.startsWith(`${day}|${teacher}|`)) delete dspOverrides[k];
+    });
+  }
+  saveDspState();
+  renderDailySubPlanner();
+  
+  // Also update the view if it's showing
+  const container = document.getElementById('dsp-table-container-view');
+  const summaryEl = document.getElementById('dsp-summary-view');
+  if (container && viewMode === 'substitution') {
+    renderDailySubPlannerInContainer(container, summaryEl, day);
+  }
+};
+
+// Override setDspOverride to work with both views
+const originalSetDspOverride = setDspOverride;
+setDspOverride = function(selectEl) {
+  const key = selectEl.dataset.overrideKey;
+  dspOverrides[key] = selectEl.value;
+  saveDspState();
+  renderDailySubPlanner();
+  
+  // Also update the view if it's showing
+  const container = document.getElementById('dsp-table-container-view');
+  const summaryEl = document.getElementById('dsp-summary-view');
+  if (container && viewMode === 'substitution') {
+    const daySelect = document.getElementById('dsp-day-select-view');
+    const day = daySelect?.value || DAYS[0];
+    renderDailySubPlannerInContainer(container, summaryEl, day);
+  }
+};
+
+
+// ============================================
+// SUBSTITUTION PDF EXPORT - CLEAN HEADER
+// ============================================
+
+function exportSubstitutionPDF() {
+  console.log('📄 Substitution PDF function called');
+  
+  if (!schedule) {
+    showMessage('Generate a timetable first', 'error');
+    return;
+  }
+
+  const daySelect = document.getElementById('dsp-day-select-view') || document.getElementById('dsp-day-select');
+  const day = daySelect?.value || DAYS[0];
+  
+  if (typeof dspAbsent === 'undefined') {
+    showMessage('Substitution system not initialized', 'error');
+    return;
+  }
+  
+  const absentSet = dspAbsent[day] || new Set();
+  
+  if (absentSet.size === 0) {
+    showMessage('No teachers marked absent for ' + day, 'warn');
+    return;
+  }
+
+  showLoading();
+  
+  setTimeout(() => {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      
+      // ========================================
+      // HARDCODE CLEAN SCHOOL NAME - CHANGE THIS
+      // ========================================
+      const SCHOOL_NAME = "PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR";  // Make sure this is clean text
+   const SCHOOL_ADDRESS = "Rampur"; 
+      
+      let yPos = 40;
+      const pageWidth = doc.internal.pageSize.width;
+      const centerX = pageWidth / 2;
+      
+      // ========================================
+      // HEADER - CLEAN AND CENTERED
+      // ========================================
+      
+      // School Name - Centered (CLEAN)
+      doc.setFontSize(22);
+      doc.setTextColor(74, 108, 247);
+      doc.text(SCHOOL_NAME, centerX, yPos, { align: 'center' });
+      yPos += 20;
+      
+      // School Address - Centered (CLEAN)
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(SCHOOL_ADDRESS, centerX, yPos, { align: 'center' });
+      yPos += 22;
+      
+      // Title - Centered (CLEAN)
+      doc.setFontSize(16);
+      doc.setTextColor(0);
+      doc.text('Daily Substitution Plan', centerX, yPos, { align: 'center' });
+      yPos += 18;
+      
+      // Day and Date - Centered
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-IN', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(80);
+      doc.text(`Day: ${day}  |  Date: ${dateStr}`, centerX, yPos, { align: 'center' });
+      yPos += 20;
+      
+      // Divider line
+      doc.setDrawColor(200, 200, 200);
+      doc.line(40, yPos, pageWidth - 40, yPos);
+      yPos += 16;
+      
+      // ========================================
+      // BUILD TABLE DATA
+      // ========================================
+      const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
+      const tableData = [];
+      let totalAbsent = 0;
+      
+      for (const teacher of teachers) {
+        const isAbsent = absentSet.has(teacher);
+        if (!isAbsent) continue;
+        
+        totalAbsent++;
+        
+        const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
+        
+        for (const s of suggestions) {
+          const overrideKey = `${day}|${teacher}|${s.period}`;
+          const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides || {}, overrideKey);
+          const substitute = hasOverride ? dspOverrides[overrideKey] : (s.suggested || '');
+          
+          // Clean all text
+          const cleanTeacher = String(teacher).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+          const cleanSubject = String(s.subject).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+          const cleanClass = String(s.klass).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+          const cleanSubstitute = String(substitute || 'Not Assigned').replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Not Assigned';
+          
+          tableData.push([
+            cleanTeacher,
+            `P${s.period}`,
+            cleanSubject,
+            cleanClass,
+            cleanSubstitute
+          ]);
+        }
+      }
+      
+      if (tableData.length === 0) {
+        hideLoading();
+        showMessage('No substitution data to export', 'warn');
+        return;
+      }
+      
+      // ========================================
+      // CREATE TABLE
+      // ========================================
+      const headers = ['Absent Teacher', 'Period', 'Subject', 'Class', 'Substitute Teacher'];
+      
+      doc.autoTable({
+        head: [headers],
+        body: tableData,
+        startY: yPos,
+        styles: {
+          fontSize: 10,
+          cellPadding: 8,
+          valign: 'middle',
+          lineColor: [200, 200, 200],
+          lineWidth: 0.5,
+        },
+        headStyles: {
+          fillColor: [74, 108, 247],
+          textColor: [255, 255, 255],
+          fontSize: 11,
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        columnStyles: {
+          0: { cellWidth: 100, fontStyle: 'bold' },
+          1: { cellWidth: 50, halign: 'center' },
+          2: { cellWidth: 80 },
+          3: { cellWidth: 70 },
+          4: { cellWidth: 100, fontStyle: 'bold' },
+        },
+        bodyStyles: {
+          halign: 'left',
+        },
+        didDrawCell: function(data) {
+          if (data.column.index === 4 && data.cell.raw === 'Not Assigned') {
+            data.cell.styles.fillColor = [255, 243, 205];
+            data.cell.styles.textColor = [133, 100, 4];
+            data.cell.styles.fontStyle = 'bold';
+          }
+          if (data.column.index === 4 && data.cell.raw !== 'Not Assigned' && data.cell.raw !== '') {
+            data.cell.styles.textColor = [40, 167, 69];
+          }
+        },
+        margin: { left: 40, right: 40 },
+        pageBreak: 'auto',
+        showHead: 'everyPage',
+      });
+      
+      // ========================================
+      // FOOTER - Summary
+      // ========================================
+      const finalY = doc.lastAutoTable.finalY + 20;
+      const unassigned = tableData.filter(row => row[4] === 'Not Assigned').length;
+      const covered = tableData.length - unassigned;
+      
+      doc.setFontSize(11);
+      doc.setTextColor(50);
+      doc.text(`Summary: ${totalAbsent} absent teacher(s) · ${tableData.length} period(s) to cover · ${covered} covered · ${unassigned} unassigned`, centerX, finalY, { align: 'center' });
+      
+      if (unassigned === 0) {
+        doc.setTextColor(40, 167, 69);
+        doc.text('All periods are covered!', centerX, finalY + 20, { align: 'center' });
+      } else {
+        doc.setTextColor(220, 53, 69);
+        doc.text(`${unassigned} period(s) still need to be assigned`, centerX, finalY + 20, { align: 'center' });
+      }
+      
+      // ========================================
+      // PAGE NUMBERS
+      // ========================================
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 60, doc.internal.pageSize.height - 20);
+        doc.text(SCHOOL_NAME, centerX, doc.internal.pageSize.height - 20, { align: 'center' });
+      }
+      
+      // ========================================
+      // SAVE PDF
+      // ========================================
+      doc.save(`Substitution_Plan_${day}_${today.toISOString().slice(0, 10)}.pdf`);
+      
+      hideLoading();
+      showMessage('📄 PDF downloaded!', 'ok');
+      
+    } catch (e) {
+      console.error('❌ PDF error:', e);
+      hideLoading();
+      showMessage('Error: ' + e.message, 'error');
+    }
+  }, 100);
+}
 
 </script>
 </body>
