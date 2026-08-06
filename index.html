@@ -3826,7 +3826,7 @@ function renderDailySubPlanner() {
     html += `<tr class="${isAbsent ? 'dsp-absent-row' : ''}" data-teacher="${esc(teacher)}">
       <td><input type="text" class="dsp-name-input" value="${esc(teacher)}" title="Click to rename this teacher everywhere" onchange="renameTeacherFromPlanner(this,'${esc(teacher)}')"></td>
       <td style="text-align:center;"><span class="dsp-periods-badge">${periodsToday}</span></td>
-      <td style="text-align:center;"><input type="checkbox" class="dsp-absent-toggle" ${isAbsent ? "checked" : ""} onchange="toggleDspAbsent('${esc(teacher)}', this.checked)"></td>
+      <td style="text-align:center;"><input type="checkbox" class="dsp-absent-toggle" ${isAbsent ? "checked" : ""} onchange="toggleDspAbsent('${esc(teacher)}', this.checked, '${day}')"></td>
       <td>${subCell}</td>
     </tr>`;
   }
@@ -3842,8 +3842,8 @@ function renderDailySubPlanner() {
 }
 window.renderDailySubPlanner = renderDailySubPlanner;
 
-function toggleDspAbsent(teacher, checked) {
-  const day = document.getElementById("dsp-day-select")?.value || DAYS[0];
+function toggleDspAbsent(teacher, checked, day) {
+  day = day || document.getElementById("dsp-day-select")?.value || DAYS[0];
   if (!dspAbsent[day]) dspAbsent[day] = new Set();
   if (checked) {
     dspAbsent[day].add(teacher);
@@ -5037,7 +5037,14 @@ document.getElementById("print-summary-btn")?.addEventListener("click", function
     showMessage('Generate timetable first', "error");
     return;
   }
-  
+
+  // Open the destination tab synchronously, in direct response to the click, BEFORE any
+  // async work. Mobile browsers (especially iOS Safari) only allow window.open() to bypass
+  // the popup blocker when it happens inside the original click handler with no delay in
+  // between; opening it later (e.g. from inside a setTimeout) is what made this "work on
+  // desktop, fail on mobile at random." We navigate this blank tab to the PDF once it's ready.
+  const printWin = window.open('', '_blank');
+
   showLoading();
   
   setTimeout(() => {
@@ -5236,27 +5243,44 @@ document.getElementById("print-summary-btn")?.addEventListener("click", function
       // ========================================
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      
-      const printWindow = window.open(pdfUrl, '_blank');
-      if (printWindow) {
-        printWindow.onload = function() {
-          setTimeout(function() {
-            printWindow.print();
-          }, 500);
-        };
+
+      if (printWin && !printWin.closed) {
+        // Navigate the tab we already opened (on the click) to the finished PDF.
+        printWin.location.href = pdfUrl;
+        try {
+          printWin.addEventListener('load', () => {
+            setTimeout(() => { try { printWin.print(); } catch (e) { /* best effort */ } }, 400);
+          });
+        } catch (e) { /* some mobile browsers block cross-context listeners; that's fine */ }
+        showMessage("📄 Summary PDF ready — opening for print...", "ok");
+      } else {
+        // Popup blocked (common on mobile, or if the tab got closed) — fall back to a
+        // direct download so the person still gets the file no matter what.
+        const a = document.createElement('a');
+        a.href = pdfUrl;
+        a.download = `Summary_Timetable_${new Date().toISOString().slice(0, 10)}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showMessage("📄 Pop-up was blocked, so the PDF downloaded instead. Open it and print from there.", "warn");
       }
-      
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+
       hideLoading();
-      showMessage("📄 Summary PDF generated! Opening for print...", "ok");
-      
+
     } catch (e) {
       console.error('Print error:', e);
       hideLoading();
+      if (printWin && !printWin.closed) printWin.close();
       showMessage("Error generating summary: " + e.message, "error");
     }
   }, 100);
 });
 
+
+// Remembers the last day picked in the standalone Substitution view, so switching to
+// another view (Grid/Teacher/Summary) and back doesn't silently reset the selection.
+let dspViewLastDay = null;
 
 // Override setViewMode to handle substitution view
 const originalSetViewMode = setViewMode;
@@ -5267,7 +5291,23 @@ setViewMode = function(mode) {
     document.querySelectorAll('.view-toggle-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.view === mode);
     });
-    
+
+    // If the planner is already built (e.g. the user clicked "Substitution" again, or
+    // switched away and back), just refresh it in place instead of rebuilding the whole
+    // panel from scratch. Rebuilding recreates the day <select>, which always resets to
+    // "Monday" (its first option) and made it look like every absence had been cleared.
+    const existingDaySelect = document.getElementById('dsp-day-select-view');
+    if (existingDaySelect) {
+      const day = existingDaySelect.value || DAYS[0];
+      dspViewLastDay = day;
+      renderDailySubPlannerInContainer(
+        document.getElementById('dsp-table-container-view'),
+        document.getElementById('dsp-summary-view'),
+        day
+      );
+      return;
+    }
+
     const container = document.getElementById('timetable-container');
     if (container) {
       // Render the substitution planner in the timetable container
@@ -5304,6 +5344,10 @@ setViewMode = function(mode) {
         </div>
       `;
       
+      // Restore the last day the user had selected in this view, if any.
+      const sel = document.getElementById('dsp-day-select-view');
+      if (sel && dspViewLastDay) sel.value = dspViewLastDay;
+
       // Initialize the substitution planner in this view
       initSubstitutionView();
     }
@@ -5329,6 +5373,7 @@ function initSubstitutionView() {
   // Render function for this view
   function renderSubstitutionView() {
     const day = daySelect.value || DAYS[0];
+    dspViewLastDay = day;
     renderDailySubPlannerInContainer(container, summaryEl, day);
   }
   
@@ -5409,7 +5454,7 @@ function renderDailySubPlannerInContainer(container, summaryEl, day) {
     html += `<tr class="${isAbsent ? 'dsp-absent-row' : ''}" data-teacher="${esc(teacher)}">
       <td><input type="text" class="dsp-name-input" value="${esc(teacher)}" title="Click to rename this teacher everywhere" onchange="renameTeacherFromPlanner(this,'${esc(teacher)}')"></td>
       <td style="text-align:center;"><span class="dsp-periods-badge">${periodsToday}</span></td>
-      <td style="text-align:center;"><input type="checkbox" class="dsp-absent-toggle" ${isAbsent ? "checked" : ""} onchange="toggleDspAbsent('${esc(teacher)}', this.checked)"></td>
+      <td style="text-align:center;"><input type="checkbox" class="dsp-absent-toggle" ${isAbsent ? "checked" : ""} onchange="toggleDspAbsent('${esc(teacher)}', this.checked, '${day}')"></td>
       <td>${subCell}</td>
     </tr>`;
   }
@@ -5424,11 +5469,18 @@ function renderDailySubPlannerInContainer(container, summaryEl, day) {
   }
 }
 
-// Override toggleDspAbsent to work with both views
+// Override toggleDspAbsent to work with both the Substitution tab and the standalone
+// "view mode" copy of the planner. IMPORTANT: the day must come from whichever row the
+// user actually clicked (passed in explicitly by the caller), never re-guessed from
+// document.getElementById('dsp-day-select'), because BOTH copies of the day <select>
+// can exist in the DOM at once (one hidden behind the other tab/view). Picking the wrong
+// one silently wrote the absence into the wrong day and made the visible table look empty.
 const originalToggleDspAbsent = toggleDspAbsent;
-toggleDspAbsent = function(teacher, checked) {
-  const daySelect = document.getElementById('dsp-day-select') || document.getElementById('dsp-day-select-view');
-  const day = daySelect?.value || DAYS[0];
+toggleDspAbsent = function(teacher, checked, day) {
+  day = day
+    || document.getElementById('dsp-day-select-view')?.value
+    || document.getElementById('dsp-day-select')?.value
+    || DAYS[0];
   if (!dspAbsent[day]) dspAbsent[day] = new Set();
   if (checked) {
     dspAbsent[day].add(teacher);
@@ -5439,31 +5491,35 @@ toggleDspAbsent = function(teacher, checked) {
     });
   }
   saveDspState();
-  renderDailySubPlanner();
-  
-  // Also update the view if it's showing
+
+  // Refresh whichever copies of the planner currently exist in the DOM. Each copy is
+  // refreshed using ITS OWN day selector (not the day that was just edited), so the
+  // tab and the standalone view can independently show different days without one
+  // overwriting the other's display.
+  if (document.getElementById('dsp-table-container')) renderDailySubPlanner();
   const container = document.getElementById('dsp-table-container-view');
   const summaryEl = document.getElementById('dsp-summary-view');
-  if (container && viewMode === 'substitution') {
-    renderDailySubPlannerInContainer(container, summaryEl, day);
+  if (container) {
+    const viewDay = document.getElementById('dsp-day-select-view')?.value || day;
+    renderDailySubPlannerInContainer(container, summaryEl, viewDay);
   }
 };
 
-// Override setDspOverride to work with both views
+// Override setDspOverride to work with both views. The day is pulled straight out of
+// the override key (day|teacher|period) that was baked in at render time, rather than
+// re-read from a <select> that may not be the one the user is looking at.
 const originalSetDspOverride = setDspOverride;
 setDspOverride = function(selectEl) {
   const key = selectEl.dataset.overrideKey;
   dspOverrides[key] = selectEl.value;
   saveDspState();
-  renderDailySubPlanner();
-  
-  // Also update the view if it's showing
+
+  if (document.getElementById('dsp-table-container')) renderDailySubPlanner();
   const container = document.getElementById('dsp-table-container-view');
   const summaryEl = document.getElementById('dsp-summary-view');
-  if (container && viewMode === 'substitution') {
-    const daySelect = document.getElementById('dsp-day-select-view');
-    const day = daySelect?.value || DAYS[0];
-    renderDailySubPlannerInContainer(container, summaryEl, day);
+  if (container) {
+    const viewDay = document.getElementById('dsp-day-select-view')?.value || key.split('|')[0];
+    renderDailySubPlannerInContainer(container, summaryEl, viewDay);
   }
 };
 
@@ -5472,209 +5528,255 @@ setDspOverride = function(selectEl) {
 // SUBSTITUTION PDF EXPORT - CLEAN HEADER
 // ============================================
 
-
 function exportSubstitutionPDF() {
-    console.log('📄 Substitution PDF function called');
-    
-    if (!schedule) {
-        showMessage('Generate a timetable first', 'error');
-        return;
-    }
+  console.log('📄 Substitution PDF function called');
+  
+  if (!schedule) {
+    showMessage('Generate a timetable first', 'error');
+    return;
+  }
 
-    // Get the day from either view
-    const daySelect = document.getElementById('dsp-day-select-view') || document.getElementById('dsp-day-select');
-    const day = daySelect?.value || DAYS[0];
-    
-    // CRITICAL FIX: Initialize dspAbsent if it doesn't exist
-    if (typeof dspAbsent === 'undefined' || dspAbsent === null) {
-        dspAbsent = {};
-        loadDspState(); // Try to load from localStorage
-    }
-    
-    // Make sure the current day exists in dspAbsent
-    if (!dspAbsent[day]) {
-        dspAbsent[day] = new Set();
-    }
-    
-    const absentSet = dspAbsent[day];
-    
-    if (absentSet.size === 0) {
-        showMessage('No teachers marked absent for ' + day, 'warn');
-        return;
-    }
+  const daySelect = document.getElementById('dsp-day-select-view') || document.getElementById('dsp-day-select');
+  const day = daySelect?.value || DAYS[0];
+  
+  if (typeof dspAbsent === 'undefined') {
+    showMessage('Substitution system not initialized', 'error');
+    return;
+  }
+  
+  const absentSet = dspAbsent[day] || new Set();
+  
+  if (absentSet.size === 0) {
+    showMessage('No teachers marked absent for ' + day, 'warn');
+    return;
+  }
 
-    showLoading();
-    
-    setTimeout(() => {
-        try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-            
-            const SCHOOL_NAME = "PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR";
-            const SCHOOL_ADDRESS = "Rampur";
-            
-            let yPos = 40;
-            const pageWidth = doc.internal.pageSize.width;
-            const centerX = pageWidth / 2;
-            
-            // Header
-            doc.setFontSize(22);
-            doc.setTextColor(74, 108, 247);
-            doc.text(SCHOOL_NAME, centerX, yPos, { align: 'center' });
-            yPos += 20;
-            
-            doc.setFontSize(11);
-            doc.setTextColor(100);
-            doc.text(SCHOOL_ADDRESS, centerX, yPos, { align: 'center' });
-            yPos += 22;
-            
-            doc.setFontSize(16);
-            doc.setTextColor(0);
-            doc.text('Daily Substitution Plan', centerX, yPos, { align: 'center' });
-            yPos += 18;
-            
-            const today = new Date();
-            const dateStr = today.toLocaleDateString('en-IN', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            
-            doc.setFontSize(12);
-            doc.setTextColor(80);
-            doc.text(`Day: ${day}  |  Date: ${dateStr}`, centerX, yPos, { align: 'center' });
-            yPos += 20;
-            
-            doc.setDrawColor(200, 200, 200);
-            doc.line(40, yPos, pageWidth - 40, yPos);
-            yPos += 16;
-            
-            // Build table data
-            const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
-            const tableData = [];
-            let totalAbsent = 0;
-            
-            // CRITICAL FIX: Initialize dspOverrides if it doesn't exist
-            if (typeof dspOverrides === 'undefined' || dspOverrides === null) {
-                dspOverrides = {};
-            }
-            
-            for (const teacher of teachers) {
-                const isAbsent = absentSet.has(teacher);
-                if (!isAbsent) continue;
-                
-                totalAbsent++;
-                
-                const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
-                
-                for (const s of suggestions) {
-                    const overrideKey = `${day}|${teacher}|${s.period}`;
-                    const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey);
-                    const substitute = hasOverride ? dspOverrides[overrideKey] : (s.suggested || '');
-                    
-                    const cleanTeacher = String(teacher).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
-                    const cleanSubject = String(s.subject).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
-                    const cleanClass = String(s.klass).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
-                    const cleanSubstitute = String(substitute || 'Not Assigned').replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Not Assigned';
-                    
-                    tableData.push([
-                        cleanTeacher,
-                        `P${s.period}`,
-                        cleanSubject,
-                        cleanClass,
-                        cleanSubstitute
-                    ]);
-                }
-            }
-            
-            if (tableData.length === 0) {
-                hideLoading();
-                showMessage('No substitution data to export', 'warn');
-                return;
-            }
-            
-            const headers = ['Absent Teacher', 'Period', 'Subject', 'Class', 'Substitute Teacher'];
-            
-            doc.autoTable({
-                head: [headers],
-                body: tableData,
-                startY: yPos,
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 8,
-                    valign: 'middle',
-                    lineColor: [200, 200, 200],
-                    lineWidth: 0.5,
-                },
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontSize: 11,
-                    fontStyle: 'bold',
-                    halign: 'center',
-                },
-                columnStyles: {
-                    0: { cellWidth: 100, fontStyle: 'bold' },
-                    1: { cellWidth: 50, halign: 'center' },
-                    2: { cellWidth: 80 },
-                    3: { cellWidth: 70 },
-                    4: { cellWidth: 100, fontStyle: 'bold' },
-                },
-                bodyStyles: {
-                    halign: 'left',
-                },
-                didDrawCell: function(data) {
-                    if (data.column.index === 4 && data.cell.raw === 'Not Assigned') {
-                        data.cell.styles.fillColor = [255, 243, 205];
-                        data.cell.styles.textColor = [133, 100, 4];
-                        data.cell.styles.fontStyle = 'bold';
-                    }
-                    if (data.column.index === 4 && data.cell.raw !== 'Not Assigned' && data.cell.raw !== '') {
-                        data.cell.styles.textColor = [40, 167, 69];
-                    }
-                },
-                margin: { left: 40, right: 40 },
-                pageBreak: 'auto',
-                showHead: 'everyPage',
-            });
-            
-            const finalY = doc.lastAutoTable.finalY + 20;
-            const unassigned = tableData.filter(row => row[4] === 'Not Assigned').length;
-            const covered = tableData.length - unassigned;
-            
-            doc.setFontSize(11);
-            doc.setTextColor(50);
-            doc.text(`Summary: ${totalAbsent} absent teacher(s) · ${tableData.length} period(s) to cover · ${covered} covered · ${unassigned} unassigned`, centerX, finalY, { align: 'center' });
-            
-            if (unassigned === 0) {
-                doc.setTextColor(40, 167, 69);
-                doc.text('All periods are covered!', centerX, finalY + 20, { align: 'center' });
-            } else {
-                doc.setTextColor(220, 53, 69);
-                doc.text(`${unassigned} period(s) still need to be assigned`, centerX, finalY + 20, { align: 'center' });
-            }
-            
-            const totalPages = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= totalPages; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setTextColor(150, 150, 150);
-                doc.text(`Page ${i} of ${totalPages}`, pageWidth - 60, doc.internal.pageSize.height - 20);
-                doc.text(SCHOOL_NAME, centerX, doc.internal.pageSize.height - 20, { align: 'center' });
-            }
-            
-            doc.save(`Substitution_Plan_${day}_${today.toISOString().slice(0, 10)}.pdf`);
-            
-            hideLoading();
-            showMessage('📄 PDF downloaded!', 'ok');
-            
-        } catch (e) {
-            console.error('❌ PDF error:', e);
-            hideLoading();
-            showMessage('Error: ' + e.message, 'error');
+  // Open the destination tab synchronously, right in the click handler, before any async
+  // work. This is what mobile browsers (especially iOS Safari) require to allow a new
+  // tab/print dialog through their popup blocker — opening it later (e.g. after the PDF
+  // has finished building in a setTimeout) is why this used to work only some of the time.
+  const printWin = window.open('', '_blank');
+
+  showLoading();
+  
+  setTimeout(() => {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      
+      // ========================================
+      // HARDCODE CLEAN SCHOOL NAME - CHANGE THIS
+      // ========================================
+      const SCHOOL_NAME = "PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR";  // Make sure this is clean text
+   const SCHOOL_ADDRESS = "Rampur"; 
+      
+      let yPos = 40;
+      const pageWidth = doc.internal.pageSize.width;
+      const centerX = pageWidth / 2;
+      
+      // ========================================
+      // HEADER - CLEAN AND CENTERED
+      // ========================================
+      
+      // School Name - Centered (CLEAN)
+      doc.setFontSize(22);
+      doc.setTextColor(74, 108, 247);
+      doc.text(SCHOOL_NAME, centerX, yPos, { align: 'center' });
+      yPos += 20;
+      
+      // School Address - Centered (CLEAN)
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(SCHOOL_ADDRESS, centerX, yPos, { align: 'center' });
+      yPos += 22;
+      
+      // Title - Centered (CLEAN)
+      doc.setFontSize(16);
+      doc.setTextColor(0);
+      doc.text('Daily Substitution Plan', centerX, yPos, { align: 'center' });
+      yPos += 18;
+      
+      // Day and Date - Centered
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-IN', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(80);
+      doc.text(`Day: ${day}  |  Date: ${dateStr}`, centerX, yPos, { align: 'center' });
+      yPos += 20;
+      
+      // Divider line
+      doc.setDrawColor(200, 200, 200);
+      doc.line(40, yPos, pageWidth - 40, yPos);
+      yPos += 16;
+      
+      // ========================================
+      // BUILD TABLE DATA
+      // ========================================
+      const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
+      const tableData = [];
+      let totalAbsent = 0;
+      
+      for (const teacher of teachers) {
+        const isAbsent = absentSet.has(teacher);
+        if (!isAbsent) continue;
+        
+        totalAbsent++;
+        
+        const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
+        
+        for (const s of suggestions) {
+          const overrideKey = `${day}|${teacher}|${s.period}`;
+          const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides || {}, overrideKey);
+          const substitute = hasOverride ? dspOverrides[overrideKey] : (s.suggested || '');
+          
+          // Clean all text
+          const cleanTeacher = String(teacher).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+          const cleanSubject = String(s.subject).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+          const cleanClass = String(s.klass).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+          const cleanSubstitute = String(substitute || 'Not Assigned').replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Not Assigned';
+          
+          tableData.push([
+            cleanTeacher,
+            `P${s.period}`,
+            cleanSubject,
+            cleanClass,
+            cleanSubstitute
+          ]);
         }
-    }, 100);
+      }
+      
+      if (tableData.length === 0) {
+        hideLoading();
+        if (printWin && !printWin.closed) printWin.close();
+        showMessage('No substitution data to export', 'warn');
+        return;
+      }
+      
+      // ========================================
+      // CREATE TABLE
+      // ========================================
+      const headers = ['Absent Teacher', 'Period', 'Subject', 'Class', 'Substitute Teacher'];
+      
+      doc.autoTable({
+        head: [headers],
+        body: tableData,
+        startY: yPos,
+        styles: {
+          fontSize: 10,
+          cellPadding: 8,
+          valign: 'middle',
+          lineColor: [200, 200, 200],
+          lineWidth: 0.5,
+        },
+        headStyles: {
+          fillColor: [74, 108, 247],
+          textColor: [255, 255, 255],
+          fontSize: 11,
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        columnStyles: {
+          0: { cellWidth: 100, fontStyle: 'bold' },
+          1: { cellWidth: 50, halign: 'center' },
+          2: { cellWidth: 80 },
+          3: { cellWidth: 70 },
+          4: { cellWidth: 100, fontStyle: 'bold' },
+        },
+        bodyStyles: {
+          halign: 'left',
+        },
+        didDrawCell: function(data) {
+          if (data.column.index === 4 && data.cell.raw === 'Not Assigned') {
+            data.cell.styles.fillColor = [255, 243, 205];
+            data.cell.styles.textColor = [133, 100, 4];
+            data.cell.styles.fontStyle = 'bold';
+          }
+          if (data.column.index === 4 && data.cell.raw !== 'Not Assigned' && data.cell.raw !== '') {
+            data.cell.styles.textColor = [40, 167, 69];
+          }
+        },
+        margin: { left: 40, right: 40 },
+        pageBreak: 'auto',
+        showHead: 'everyPage',
+      });
+      
+      // ========================================
+      // FOOTER - Summary
+      // ========================================
+      const finalY = doc.lastAutoTable.finalY + 20;
+      const unassigned = tableData.filter(row => row[4] === 'Not Assigned').length;
+      const covered = tableData.length - unassigned;
+      
+      doc.setFontSize(11);
+      doc.setTextColor(50);
+      doc.text(`Summary: ${totalAbsent} absent teacher(s) · ${tableData.length} period(s) to cover · ${covered} covered · ${unassigned} unassigned`, centerX, finalY, { align: 'center' });
+      
+      if (unassigned === 0) {
+        doc.setTextColor(40, 167, 69);
+        doc.text('All periods are covered!', centerX, finalY + 20, { align: 'center' });
+      } else {
+        doc.setTextColor(220, 53, 69);
+        doc.text(`${unassigned} period(s) still need to be assigned`, centerX, finalY + 20, { align: 'center' });
+      }
+      
+      // ========================================
+      // PAGE NUMBERS
+      // ========================================
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 60, doc.internal.pageSize.height - 20);
+        doc.text(SCHOOL_NAME, centerX, doc.internal.pageSize.height - 20, { align: 'center' });
+      }
+      
+      // ========================================
+      // OPEN FOR PRINT (with a direct-download fallback)
+      // ========================================
+      const filename = `Substitution_Plan_${day}_${today.toISOString().slice(0, 10)}.pdf`;
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      if (printWin && !printWin.closed) {
+        // Navigate the tab opened at click-time to the finished PDF, then try to trigger
+        // the print dialog. If auto-print doesn't fire (varies by browser), the person can
+        // still print or share the PDF straight from the tab that just opened.
+        printWin.location.href = pdfUrl;
+        try {
+          printWin.addEventListener('load', () => {
+            setTimeout(() => { try { printWin.print(); } catch (e) { /* best effort */ } }, 400);
+          });
+        } catch (e) { /* some mobile browsers block cross-context listeners; that's fine */ }
+        showMessage('📄 Substitution plan ready — opening for print...', 'ok');
+      } else {
+        // Popup blocked (common on mobile) — fall back to a direct download so the
+        // person still gets the file no matter what.
+        const a = document.createElement('a');
+        a.href = pdfUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showMessage('📄 Pop-up was blocked, so the PDF downloaded instead. Open it and print from there.', 'warn');
+      }
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+
+      hideLoading();
+
+    } catch (e) {
+      console.error('❌ PDF error:', e);
+      hideLoading();
+      if (printWin && !printWin.closed) printWin.close();
+      showMessage('Error: ' + e.message, 'error');
+    }
+  }, 100);
 }
 
 </script>
