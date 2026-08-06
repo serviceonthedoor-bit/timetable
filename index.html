@@ -5472,222 +5472,209 @@ setDspOverride = function(selectEl) {
 // SUBSTITUTION PDF EXPORT - CLEAN HEADER
 // ============================================
 
+
 function exportSubstitutionPDF() {
-  console.log('📄 Substitution PDF function called');
-  
-  if (!schedule) {
-    showMessage('Generate a timetable first', 'error');
-    return;
-  }
-
-  const daySelect = document.getElementById('dsp-day-select-view') || document.getElementById('dsp-day-select');
-  const day = daySelect?.value || DAYS[0];
-  
-  if (typeof dspAbsent === 'undefined') {
-    showMessage('Substitution system not initialized', 'error');
-    return;
-  }
-  
-  const absentSet = dspAbsent[day] || new Set();
-  
-  if (absentSet.size === 0) {
-    showMessage('No teachers marked absent for ' + day, 'warn');
-    return;
-  }
-
-  showLoading();
-  
-  setTimeout(() => {
-    try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-      
-      // ========================================
-      // HARDCODE CLEAN SCHOOL NAME - CHANGE THIS
-      // ========================================
-      const SCHOOL_NAME = "PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR";  // Make sure this is clean text
-   const SCHOOL_ADDRESS = "Rampur"; 
-      
-      let yPos = 40;
-      const pageWidth = doc.internal.pageSize.width;
-      const centerX = pageWidth / 2;
-      
-      // ========================================
-      // HEADER - CLEAN AND CENTERED
-      // ========================================
-      
-      // School Name - Centered (CLEAN)
-      doc.setFontSize(22);
-      doc.setTextColor(74, 108, 247);
-      doc.text(SCHOOL_NAME, centerX, yPos, { align: 'center' });
-      yPos += 20;
-      
-      // School Address - Centered (CLEAN)
-      doc.setFontSize(11);
-      doc.setTextColor(100);
-      doc.text(SCHOOL_ADDRESS, centerX, yPos, { align: 'center' });
-      yPos += 22;
-      
-      // Title - Centered (CLEAN)
-      doc.setFontSize(16);
-      doc.setTextColor(0);
-      doc.text('Daily Substitution Plan', centerX, yPos, { align: 'center' });
-      yPos += 18;
-      
-      // Day and Date - Centered
-      const today = new Date();
-      const dateStr = today.toLocaleDateString('en-IN', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-      
-      doc.setFontSize(12);
-      doc.setTextColor(80);
-      doc.text(`Day: ${day}  |  Date: ${dateStr}`, centerX, yPos, { align: 'center' });
-      yPos += 20;
-      
-      // Divider line
-      doc.setDrawColor(200, 200, 200);
-      doc.line(40, yPos, pageWidth - 40, yPos);
-      yPos += 16;
-      
-      // ========================================
-      // BUILD TABLE DATA
-      // ========================================
-      const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
-      const tableData = [];
-      let totalAbsent = 0;
-      
-      for (const teacher of teachers) {
-        const isAbsent = absentSet.has(teacher);
-        if (!isAbsent) continue;
-        
-        totalAbsent++;
-        
-        const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
-        
-        for (const s of suggestions) {
-          const overrideKey = `${day}|${teacher}|${s.period}`;
-          const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides || {}, overrideKey);
-          const substitute = hasOverride ? dspOverrides[overrideKey] : (s.suggested || '');
-          
-          // Clean all text
-          const cleanTeacher = String(teacher).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
-          const cleanSubject = String(s.subject).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
-          const cleanClass = String(s.klass).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
-          const cleanSubstitute = String(substitute || 'Not Assigned').replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Not Assigned';
-          
-          tableData.push([
-            cleanTeacher,
-            `P${s.period}`,
-            cleanSubject,
-            cleanClass,
-            cleanSubstitute
-          ]);
-        }
-      }
-      
-      if (tableData.length === 0) {
-        hideLoading();
-        showMessage('No substitution data to export', 'warn');
+    console.log('📄 Substitution PDF function called');
+    
+    if (!schedule) {
+        showMessage('Generate a timetable first', 'error');
         return;
-      }
-      
-      // ========================================
-      // CREATE TABLE
-      // ========================================
-      const headers = ['Absent Teacher', 'Period', 'Subject', 'Class', 'Substitute Teacher'];
-      
-      doc.autoTable({
-        head: [headers],
-        body: tableData,
-        startY: yPos,
-        styles: {
-          fontSize: 10,
-          cellPadding: 8,
-          valign: 'middle',
-          lineColor: [200, 200, 200],
-          lineWidth: 0.5,
-        },
-        headStyles: {
-          fillColor: [74, 108, 247],
-          textColor: [255, 255, 255],
-          fontSize: 11,
-          fontStyle: 'bold',
-          halign: 'center',
-        },
-        columnStyles: {
-          0: { cellWidth: 100, fontStyle: 'bold' },
-          1: { cellWidth: 50, halign: 'center' },
-          2: { cellWidth: 80 },
-          3: { cellWidth: 70 },
-          4: { cellWidth: 100, fontStyle: 'bold' },
-        },
-        bodyStyles: {
-          halign: 'left',
-        },
-        didDrawCell: function(data) {
-          if (data.column.index === 4 && data.cell.raw === 'Not Assigned') {
-            data.cell.styles.fillColor = [255, 243, 205];
-            data.cell.styles.textColor = [133, 100, 4];
-            data.cell.styles.fontStyle = 'bold';
-          }
-          if (data.column.index === 4 && data.cell.raw !== 'Not Assigned' && data.cell.raw !== '') {
-            data.cell.styles.textColor = [40, 167, 69];
-          }
-        },
-        margin: { left: 40, right: 40 },
-        pageBreak: 'auto',
-        showHead: 'everyPage',
-      });
-      
-      // ========================================
-      // FOOTER - Summary
-      // ========================================
-      const finalY = doc.lastAutoTable.finalY + 20;
-      const unassigned = tableData.filter(row => row[4] === 'Not Assigned').length;
-      const covered = tableData.length - unassigned;
-      
-      doc.setFontSize(11);
-      doc.setTextColor(50);
-      doc.text(`Summary: ${totalAbsent} absent teacher(s) · ${tableData.length} period(s) to cover · ${covered} covered · ${unassigned} unassigned`, centerX, finalY, { align: 'center' });
-      
-      if (unassigned === 0) {
-        doc.setTextColor(40, 167, 69);
-        doc.text('All periods are covered!', centerX, finalY + 20, { align: 'center' });
-      } else {
-        doc.setTextColor(220, 53, 69);
-        doc.text(`${unassigned} period(s) still need to be assigned`, centerX, finalY + 20, { align: 'center' });
-      }
-      
-      // ========================================
-      // PAGE NUMBERS
-      // ========================================
-      const totalPages = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
-        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 60, doc.internal.pageSize.height - 20);
-        doc.text(SCHOOL_NAME, centerX, doc.internal.pageSize.height - 20, { align: 'center' });
-      }
-      
-      // ========================================
-      // SAVE PDF
-      // ========================================
-      doc.save(`Substitution_Plan_${day}_${today.toISOString().slice(0, 10)}.pdf`);
-      
-      hideLoading();
-      showMessage('📄 PDF downloaded!', 'ok');
-      
-    } catch (e) {
-      console.error('❌ PDF error:', e);
-      hideLoading();
-      showMessage('Error: ' + e.message, 'error');
     }
-  }, 100);
+
+    // Get the day from either view
+    const daySelect = document.getElementById('dsp-day-select-view') || document.getElementById('dsp-day-select');
+    const day = daySelect?.value || DAYS[0];
+    
+    // CRITICAL FIX: Initialize dspAbsent if it doesn't exist
+    if (typeof dspAbsent === 'undefined' || dspAbsent === null) {
+        dspAbsent = {};
+        loadDspState(); // Try to load from localStorage
+    }
+    
+    // Make sure the current day exists in dspAbsent
+    if (!dspAbsent[day]) {
+        dspAbsent[day] = new Set();
+    }
+    
+    const absentSet = dspAbsent[day];
+    
+    if (absentSet.size === 0) {
+        showMessage('No teachers marked absent for ' + day, 'warn');
+        return;
+    }
+
+    showLoading();
+    
+    setTimeout(() => {
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+            
+            const SCHOOL_NAME = "PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR";
+            const SCHOOL_ADDRESS = "Rampur";
+            
+            let yPos = 40;
+            const pageWidth = doc.internal.pageSize.width;
+            const centerX = pageWidth / 2;
+            
+            // Header
+            doc.setFontSize(22);
+            doc.setTextColor(74, 108, 247);
+            doc.text(SCHOOL_NAME, centerX, yPos, { align: 'center' });
+            yPos += 20;
+            
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(SCHOOL_ADDRESS, centerX, yPos, { align: 'center' });
+            yPos += 22;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(0);
+            doc.text('Daily Substitution Plan', centerX, yPos, { align: 'center' });
+            yPos += 18;
+            
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('en-IN', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(80);
+            doc.text(`Day: ${day}  |  Date: ${dateStr}`, centerX, yPos, { align: 'center' });
+            yPos += 20;
+            
+            doc.setDrawColor(200, 200, 200);
+            doc.line(40, yPos, pageWidth - 40, yPos);
+            yPos += 16;
+            
+            // Build table data
+            const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
+            const tableData = [];
+            let totalAbsent = 0;
+            
+            // CRITICAL FIX: Initialize dspOverrides if it doesn't exist
+            if (typeof dspOverrides === 'undefined' || dspOverrides === null) {
+                dspOverrides = {};
+            }
+            
+            for (const teacher of teachers) {
+                const isAbsent = absentSet.has(teacher);
+                if (!isAbsent) continue;
+                
+                totalAbsent++;
+                
+                const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
+                
+                for (const s of suggestions) {
+                    const overrideKey = `${day}|${teacher}|${s.period}`;
+                    const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey);
+                    const substitute = hasOverride ? dspOverrides[overrideKey] : (s.suggested || '');
+                    
+                    const cleanTeacher = String(teacher).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+                    const cleanSubject = String(s.subject).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+                    const cleanClass = String(s.klass).replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Unknown';
+                    const cleanSubstitute = String(substitute || 'Not Assigned').replace(/[^a-zA-Z0-9\s\.\-\(\)]/g, '').trim() || 'Not Assigned';
+                    
+                    tableData.push([
+                        cleanTeacher,
+                        `P${s.period}`,
+                        cleanSubject,
+                        cleanClass,
+                        cleanSubstitute
+                    ]);
+                }
+            }
+            
+            if (tableData.length === 0) {
+                hideLoading();
+                showMessage('No substitution data to export', 'warn');
+                return;
+            }
+            
+            const headers = ['Absent Teacher', 'Period', 'Subject', 'Class', 'Substitute Teacher'];
+            
+            doc.autoTable({
+                head: [headers],
+                body: tableData,
+                startY: yPos,
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 8,
+                    valign: 'middle',
+                    lineColor: [200, 200, 200],
+                    lineWidth: 0.5,
+                },
+                headStyles: {
+                    fillColor: [74, 108, 247],
+                    textColor: [255, 255, 255],
+                    fontSize: 11,
+                    fontStyle: 'bold',
+                    halign: 'center',
+                },
+                columnStyles: {
+                    0: { cellWidth: 100, fontStyle: 'bold' },
+                    1: { cellWidth: 50, halign: 'center' },
+                    2: { cellWidth: 80 },
+                    3: { cellWidth: 70 },
+                    4: { cellWidth: 100, fontStyle: 'bold' },
+                },
+                bodyStyles: {
+                    halign: 'left',
+                },
+                didDrawCell: function(data) {
+                    if (data.column.index === 4 && data.cell.raw === 'Not Assigned') {
+                        data.cell.styles.fillColor = [255, 243, 205];
+                        data.cell.styles.textColor = [133, 100, 4];
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                    if (data.column.index === 4 && data.cell.raw !== 'Not Assigned' && data.cell.raw !== '') {
+                        data.cell.styles.textColor = [40, 167, 69];
+                    }
+                },
+                margin: { left: 40, right: 40 },
+                pageBreak: 'auto',
+                showHead: 'everyPage',
+            });
+            
+            const finalY = doc.lastAutoTable.finalY + 20;
+            const unassigned = tableData.filter(row => row[4] === 'Not Assigned').length;
+            const covered = tableData.length - unassigned;
+            
+            doc.setFontSize(11);
+            doc.setTextColor(50);
+            doc.text(`Summary: ${totalAbsent} absent teacher(s) · ${tableData.length} period(s) to cover · ${covered} covered · ${unassigned} unassigned`, centerX, finalY, { align: 'center' });
+            
+            if (unassigned === 0) {
+                doc.setTextColor(40, 167, 69);
+                doc.text('All periods are covered!', centerX, finalY + 20, { align: 'center' });
+            } else {
+                doc.setTextColor(220, 53, 69);
+                doc.text(`${unassigned} period(s) still need to be assigned`, centerX, finalY + 20, { align: 'center' });
+            }
+            
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} of ${totalPages}`, pageWidth - 60, doc.internal.pageSize.height - 20);
+                doc.text(SCHOOL_NAME, centerX, doc.internal.pageSize.height - 20, { align: 'center' });
+            }
+            
+            doc.save(`Substitution_Plan_${day}_${today.toISOString().slice(0, 10)}.pdf`);
+            
+            hideLoading();
+            showMessage('📄 PDF downloaded!', 'ok');
+            
+        } catch (e) {
+            console.error('❌ PDF error:', e);
+            hideLoading();
+            showMessage('Error: ' + e.message, 'error');
+        }
+    }, 100);
 }
 
 </script>
