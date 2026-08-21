@@ -1566,6 +1566,7 @@ footer {
           <button onclick="lockAllCurrentPositions()" class="btn warning small">🔒 Lock Current</button>
           <button onclick="unlockAllLessons()" class="btn ghost small">🔓 Unlock All</button>
 	  <button id="print-summary-btn" class="btn ghost small" style="border-color: var(--accent); color: var(--accent);">	🖨️ Print Summary (A3)</button>
+<button id="print-a4-btn" class="btn ghost small" style="border-color: #28a745; color: #28a745;">🖨️ Print A4 (Fit 1 Page)</button>
         </div>
       </div>
       <div id="timetable-container"></div>
@@ -3580,8 +3581,9 @@ function findSubstitutes(absentTeacher, day) {
   if (!schedule) return [];
   const absentLessons = [];
   for (const period in schedule.grid[day]) {
+    if (!isValidSubstitutionPeriod(period)) continue;
     for (const l of schedule.grid[day][period]) {
-      if (l.teacher === absentTeacher) absentLessons.push({ period: parseInt(period), subject: l.subject, klass: l.klass });
+      if (l.teacher === absentTeacher) absentLessons.push({ period: parseInt(period, 10), subject: l.subject, klass: l.klass });
     }
   }
   if (absentLessons.length === 0) return [];
@@ -3650,6 +3652,12 @@ function confirmSubstitution(absent, sub, klass, subject, day, period) {
 }
 window.confirmSubstitution = confirmSubstitution;
 
+function getCurrentDspDay() {
+  const names = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const today = names[new Date().getDay()];
+  return DAYS.includes(today) ? today : 'Monday'; // fall back to Monday on Sunday
+}
+
 function initSubstitutionPanel() {
   document.getElementById("sub-locate-btn")?.addEventListener("click", () => {
     const teacher = document.getElementById("sub-teacher-select")?.value;
@@ -3674,6 +3682,10 @@ function initSubstitutionPanel() {
   });
 
   loadDspState();
+  const dspDaySel = document.getElementById("dsp-day-select");
+  if (dspDaySel) dspDaySel.value = getCurrentDspDay();
+  const absentDaySel = document.getElementById("absent-day-select");
+  if (absentDaySel) absentDaySel.value = getCurrentDspDay();
   document.getElementById("dsp-day-select")?.addEventListener("change", renderDailySubPlanner);
   document.getElementById("dsp-refresh-btn")?.addEventListener("click", () => {
     const day = document.getElementById("dsp-day-select")?.value || DAYS[0];
@@ -3710,11 +3722,23 @@ function saveDspState() {
 }
 
 // Count how many periods a teacher is teaching on a given day, for every teacher.
+function isValidSubstitutionPeriod(period) {
+  const raw = String(period ?? '').trim().toLowerCase();
+  if (!raw || raw === 'none' || raw === 'null' || raw === 'undefined' || raw === 'break') return false;
+  const n = Number(period);
+  if (!Number.isInteger(n) || n < 1) return false;
+  if (Array.isArray(schedule?.slots) && schedule.slots.length) {
+    return schedule.slots.some(s => Number(s.period) === n && String(s.period).toLowerCase() !== 'break');
+  }
+  return true;
+}
+
 function computeDailyWorkload(day) {
   const map = new Map();
   getAllTeachers().forEach(t => map.set(t, 0));
   if (!schedule?.grid?.[day]) return map;
   for (const period in schedule.grid[day]) {
+    if (!isValidSubstitutionPeriod(period)) continue;
     for (const l of schedule.grid[day][period]) {
       map.set(l.teacher, (map.get(l.teacher) || 0) + 1);
     }
@@ -3723,45 +3747,139 @@ function computeDailyWorkload(day) {
 }
 
 function isTeacherFreeAt(teacher, day, period) {
+  if (!isValidSubstitutionPeriod(period)) return false;
   const lessons = schedule?.grid?.[day]?.[period] || [];
   return !lessons.some(l => l.teacher === teacher);
 }
 
-// Suggest a substitute for every period the absent teacher was due to teach on `day`.
-// Prioritises the teacher with the LEAST periods that day; once picked for one period,
-// their tally is bumped so the *next* period prefers a different, still-lightly-loaded teacher.
-function suggestSubstitutesForTeacher(absentTeacher, day, absentSet) {
-  if (!schedule?.grid?.[day]) return [];
+// Returns the teacher currently used as a substitution for a particular day/period.
+// Manual overrides are deliberately included: they are real assignments and therefore
+// must reserve that teacher for subsequent automatic suggestions.
+function getManualSubstitutionAt(day, period, excludeKey = null) {
+  const found = [];
+  for (const key in dspOverrides) {
+    const parts = key.split('|');
+    if (parts.length !== 4) continue;
+    if (parts[0] !== day || String(parts[2]) !== String(period)) continue;
+    if (!dspOverrides[key]) continue;
+    if (excludeKey && key === excludeKey) continue;
+    found.push({ key, teacher: dspOverrides[key], absentTeacher: parts[1] });
+  }
+  return found;
+}
+
+// Build ALL automatic substitution suggestions for a day in one pass.
+// This is important: the previous implementation rebuilt the workload independently
+// for each absent teacher, so the same light teacher could be selected repeatedly.
+// Now one shared state is used for the whole day.
+function buildDailySubstitutionPlan(day, absentSet) {
+  const plan = {};
+  if (!schedule?.grid?.[day]) return plan;
+
+  const workload = computeDailyWorkload(day);
+  const substitutionCount = new Map();
+  getAllTeachers().forEach(t => substitutionCount.set(t, 0));
+
+  // Existing manual choices are reservations. They are not removed/rejected even when
+  // conflicting; the conflict is handled by setDspOverride() with a warning.
+  for (const key in dspOverrides) {
+    const parts = key.split('|');
+    if (parts.length < 3 || parts[0] !== day || !isValidSubstitutionPeriod(parts[2]) || !dspOverrides[key]) continue;
+    const t = dspOverrides[key];
+    substitutionCount.set(t, (substitutionCount.get(t) || 0) + 1);
+  }
+
   const absentLessons = [];
-  for (const period in schedule.grid[day]) {
-    for (const l of schedule.grid[day][period]) {
-      if (l.teacher === absentTeacher) {
-        absentLessons.push({ period: parseInt(period, 10), subject: l.subject, klass: l.klass });
+  for (const absentTeacher of absentSet) {
+    for (const period in (schedule.grid[day] || {})) {
+      if (!isValidSubstitutionPeriod(period)) continue;
+      for (const l of schedule.grid[day][period]) {
+        if (l.teacher === absentTeacher) {
+          absentLessons.push({
+            absentTeacher,
+            period: parseInt(period, 10),
+            subject: l.subject,
+            klass: l.klass
+          });
+        }
       }
     }
   }
-  absentLessons.sort((a, b) => a.period - b.period);
-  if (absentLessons.length === 0) return [];
+  absentLessons.sort((a, b) => a.period - b.period || a.absentTeacher.localeCompare(b.absentTeacher));
 
-  const workload = computeDailyWorkload(day);
-  const pool = getAllTeachers().filter(t => t !== absentTeacher && !absentSet.has(t));
+  const pool = getAllTeachers().filter(t => !absentSet.has(t));
 
-  return absentLessons.map(lesson => {
+  for (const lesson of absentLessons) {
+    const overrideKey = `${day}|${lesson.absentTeacher}|${lesson.period}|${lesson.klass}`;
+
+    // A manual assignment is authoritative. Keep it in the plan and do not auto-change it.
+    if (Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey) && dspOverrides[overrideKey]) {
+      plan[overrideKey] = dspOverrides[overrideKey];
+      continue;
+    }
+
     const candidates = pool
+      .filter(t => t !== lesson.absentTeacher)
+      // Never auto-assign a teacher who already has one substitution somewhere earlier
+      // in this day. If the school has more absent periods than available teachers,
+      // leave the remaining period unassigned rather than giving someone a second one.
+      .filter(t => (substitutionCount.get(t) || 0) === 0)
+      // Teacher must be free from their normal timetable at this period.
       .filter(t => isTeacherFreeAt(t, day, lesson.period))
+      // Teacher already used as a substitution in THIS period is also unavailable.
+      .filter(t => getManualSubstitutionAt(day, lesson.period, overrideKey).every(x => x.teacher !== t))
       .sort((a, b) => {
         const wa = workload.get(a) || 0, wb = workload.get(b) || 0;
         if (wa !== wb) return wa - wb;
         const aKnows = entries.some(e => e.teacher === a && e.subject === lesson.subject) ? 1 : 0;
         const bKnows = entries.some(e => e.teacher === b && e.subject === lesson.subject) ? 1 : 0;
         if (aKnows !== bKnows) return bKnows - aKnows;
+        const aClass = entries.some(e => e.teacher === a && e.klass === lesson.klass) ? 1 : 0;
+        const bClass = entries.some(e => e.teacher === b && e.klass === lesson.klass) ? 1 : 0;
+        if (aClass !== bClass) return bClass - aClass;
         return a.localeCompare(b);
       });
+
     const chosen = candidates[0] || null;
-    if (chosen) workload.set(chosen, (workload.get(chosen) || 0) + 1);
-    const slot = schedule.slots.find(s => s.period === lesson.period);
-    return { ...lesson, periodDisplay: slot ? slot.start : `P${lesson.period}`, suggested: chosen };
-  });
+    plan[overrideKey] = chosen;
+    if (chosen) {
+      // Count the substitution immediately so the next absent period moves to the next
+      // available teacher, even if that next period belongs to another absent teacher.
+      substitutionCount.set(chosen, (substitutionCount.get(chosen) || 0) + 1);
+      workload.set(chosen, (workload.get(chosen) || 0) + 1);
+    }
+  }
+
+  return plan;
+}
+
+
+// Suggest a substitute for every period the absent teacher was due to teach on `day`.
+// Kept as a compatibility wrapper for the existing UI, but now uses the shared day-level
+// assignment engine so one teacher is not repeatedly auto-assigned across the day.
+function suggestSubstitutesForTeacher(absentTeacher, day, absentSet, sharedPlan = null) {
+  if (!schedule?.grid?.[day]) return [];
+  const plan = sharedPlan || buildDailySubstitutionPlan(day, absentSet);
+  const results = [];
+
+  for (const period in schedule.grid[day]) {
+    if (!isValidSubstitutionPeriod(period)) continue;
+    for (const l of schedule.grid[day][period]) {
+      if (l.teacher !== absentTeacher) continue;
+      const periodNum = parseInt(period, 10);
+            const key = `${day}|${absentTeacher}|${periodNum}|${l.klass}`;
+      const slot = schedule.slots.find(s => s.period === periodNum);
+      results.push({
+        period: periodNum,
+        subject: l.subject,
+        klass: l.klass,
+        periodDisplay: slot ? slot.start : `P${periodNum}`,
+        suggested: plan[key] || null
+      });
+    }
+  }
+  results.sort((a, b) => a.period - b.period);
+  return results;
 }
 
 function renderDailySubPlanner() {
@@ -3780,6 +3898,11 @@ function renderDailySubPlanner() {
   if (!dspAbsent[day]) dspAbsent[day] = new Set();
   const absentSet = dspAbsent[day];
   const workloadToday = computeDailyWorkload(day);
+
+  // Build ONE shared plan for the whole day. Do not rebuild it separately for each
+  // absent teacher, otherwise the same substitute can be selected for two classes
+  // at the same period. Manual overrides are authoritative and remain fixed.
+  const dailySubPlan = buildDailySubstitutionPlan(day, absentSet);
 
   let uncovered = 0, totalAbsentPeriods = 0;
 
@@ -3800,25 +3923,33 @@ function renderDailySubPlanner() {
     } else if (periodsToday === 0) {
       subCell = `<span class="dsp-empty-note">No periods scheduled this day — no coverage needed.</span>`;
     } else {
-      const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
+      const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet, dailySubPlan);
       const otherTeachers = teachers.filter(t => t !== teacher && !absentSet.has(t));
       subCell = suggestions.map(s => {
-        const overrideKey = `${day}|${teacher}|${s.period}`;
+	const overrideKey = `${day}|${teacher}|${s.period}|${s.klass}`;
         const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey);
         const currentVal = hasOverride ? dspOverrides[overrideKey] : (s.suggested || "");
         totalAbsentPeriods++;
         if (!currentVal) uncovered++;
-        const selectClasses = ["dsp-sub-select"];
+                const selectClasses = ["dsp-sub-select"];
         if (!currentVal) selectClasses.push("dsp-unassigned");
         else if (hasOverride && currentVal !== s.suggested) selectClasses.push("dsp-overridden");
         const options = [`<option value="">-- Unassigned --</option>`]
           .concat(otherTeachers.map(t => `<option value="${esc(t)}" ${t === currentVal ? "selected" : ""}>${esc(t)}</option>`))
           .join("");
+        // Persistent conflict marker: only manual overrides can carry a real conflict,
+        // since the automatic plan (buildDailySubstitutionPlan) never produces one.
+        const conflictWarnings = (hasOverride && currentVal)
+          ? computeSubstitutionWarnings(day, teacher, s.period, currentVal, overrideKey)
+          : [];
+        const conflictBadge = conflictWarnings.length
+          ? ` <span style="color:#dc3545;font-weight:700;cursor:help;" title="${esc(conflictWarnings.join(' '))}">⚠️</span>`
+          : '';
         return `<div class="dsp-sub-row">
           <span class="dsp-sub-label">P${s.period} · ${esc(s.periodDisplay)}<br>${esc(s.klass)} — ${esc(s.subject)}</span>
           <select class="${selectClasses.join(' ')}" data-override-key="${esc(overrideKey)}" onchange="setDspOverride(this)">
             ${options}
-          </select>
+          </select>${conflictBadge}
         </div>`;
       }).join("");
     }
@@ -3857,11 +3988,81 @@ function toggleDspAbsent(teacher, checked, day) {
 }
 window.toggleDspAbsent = toggleDspAbsent;
 
+// Single source of truth for substitution conflicts. Used both for the one-time toast
+// shown at the moment of a manual pick, AND for the persistent ⚠️ badge rendered next
+// to that pick on every re-render — so the conflict stays visible, not just flashed once.
+function computeSubstitutionWarnings(day, absentTeacher, period, chosenTeacher, keyToExclude) {
+  const warnings = [];
+  if (!chosenTeacher) return warnings;
+
+  if (chosenTeacher === absentTeacher) {
+    warnings.push(`${chosenTeacher} is the absent teacher for this substitution.`);
+  }
+
+  // Rule 1: existing timetable conflict
+  if (!isTeacherFreeAt(chosenTeacher, day, period)) {
+    warnings.push(`${chosenTeacher} is already teaching during Period ${period}.`);
+  }
+
+  // Rule 2: existing substitution conflict (auto plan + manual overrides)
+  const effectivePlan = buildDailySubstitutionPlan(day, dspAbsent[day] || new Set());
+  const samePeriodConflicts = [];
+  for (const k in effectivePlan) {
+    if (k === keyToExclude) continue;
+    const p = k.split('|');
+    if (p.length >= 3 && p[0] === day && String(p[2]) === String(period) && effectivePlan[k] === chosenTeacher) {
+      samePeriodConflicts.push(p[1]);
+    }
+  }
+  for (const item of getManualSubstitutionAt(day, period, keyToExclude)) {
+    if (item.teacher === chosenTeacher && !samePeriodConflicts.includes(item.absentTeacher)) {
+      samePeriodConflicts.push(item.absentTeacher);
+    }
+  }
+  if (samePeriodConflicts.length) {
+    warnings.push(`${chosenTeacher} is already assigned to another substitution in Period ${period} (${samePeriodConflicts.join(', ')}).`);
+  }
+
+  const dayCount = Object.keys(dspOverrides).filter(k => {
+    const p = k.split('|');
+    return p[0] === day && p[2] !== String(period) && dspOverrides[k] === chosenTeacher;
+  }).length;
+  if (dayCount >= 1) {
+    warnings.push(`${chosenTeacher} already has ${dayCount} other substitution assignment(s) on ${day}.`);
+  }
+
+  return warnings;
+}
+
 function setDspOverride(selectEl) {
   const key = selectEl.dataset.overrideKey;
-  dspOverrides[key] = selectEl.value;
+  const parts = key.split('|');
+  const day = parts[0];
+  const absentTeacher = parts[1];
+  const period = parseInt(parts[2], 10);
+  const chosen = selectEl.value;
+
+  if (!chosen) {
+    delete dspOverrides[key];
+    saveDspState();
+    refreshBothSubstitutionViews(day);
+    return;
+  }
+
+  const warnings = computeSubstitutionWarnings(day, absentTeacher, period, chosen, key);
+
+  // MANUAL OVERRIDE = AUTHORITATIVE / FORCE.
+  // The chosen teacher stays here even when there is a conflict. Automatic allocation
+  // for other uncovered periods will move to other available teachers.
+  dspOverrides[key] = chosen;
   saveDspState();
-  renderDailySubPlanner();
+  refreshBothSubstitutionViews(day);
+
+  if (warnings.length) {
+    showMessage(`⚠️ Manual substitution saved (forced): ${warnings.join(' ')}`, "warn");
+  } else {
+    showMessage(`✅ ${chosen} assigned for Period ${period}`, "ok");
+  }
 }
 window.setDspOverride = setDspOverride;
 
@@ -5345,9 +5546,9 @@ setViewMode = function(mode) {
       `;
       
       // Restore the last day the user had selected in this view, if any.
-      const sel = document.getElementById('dsp-day-select-view');
-      if (sel && dspViewLastDay) sel.value = dspViewLastDay;
-
+            const sel = document.getElementById('dsp-day-select-view');
+      if (sel) sel.value = dspViewLastDay || getCurrentDspDay();
+      
       // Initialize the substitution planner in this view
       initSubstitutionView();
     }
@@ -5407,10 +5608,14 @@ function renderDailySubPlannerInContainer(container, summaryEl, day) {
   const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
   if (!dspAbsent[day]) dspAbsent[day] = new Set();
   const absentSet = dspAbsent[day];
-  const workloadToday = computeDailyWorkload(day);
-  
+    const workloadToday = computeDailyWorkload(day);
+
+  // Build the SAME shared day-level plan the main planner uses, so both views agree
+  // and this function never references an undefined dailySubPlan.
+  const dailySubPlan = buildDailySubstitutionPlan(day, absentSet);
+
   let uncovered = 0, totalAbsentPeriods = 0;
-  
+
   let html = `<table class="dsp-table"><thead><tr>
     <th style="min-width:180px;">Teacher</th>
     <th style="width:90px;text-align:center;">Periods (${esc(day)})</th>
@@ -5428,25 +5633,33 @@ function renderDailySubPlannerInContainer(container, summaryEl, day) {
     } else if (periodsToday === 0) {
       subCell = `<span class="dsp-empty-note">No periods scheduled this day — no coverage needed.</span>`;
     } else {
-      const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet);
+      const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet, dailySubPlan);
       const otherTeachers = teachers.filter(t => t !== teacher && !absentSet.has(t));
       subCell = suggestions.map(s => {
-        const overrideKey = `${day}|${teacher}|${s.period}`;
+	const overrideKey = `${day}|${teacher}|${s.period}|${s.klass}`;
         const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey);
         const currentVal = hasOverride ? dspOverrides[overrideKey] : (s.suggested || "");
         totalAbsentPeriods++;
         if (!currentVal) uncovered++;
-        const selectClasses = ["dsp-sub-select"];
+                const selectClasses = ["dsp-sub-select"];
         if (!currentVal) selectClasses.push("dsp-unassigned");
         else if (hasOverride && currentVal !== s.suggested) selectClasses.push("dsp-overridden");
         const options = [`<option value="">-- Unassigned --</option>`]
           .concat(otherTeachers.map(t => `<option value="${esc(t)}" ${t === currentVal ? "selected" : ""}>${esc(t)}</option>`))
           .join("");
+        // Persistent conflict marker: only manual overrides can carry a real conflict,
+        // since the automatic plan (buildDailySubstitutionPlan) never produces one.
+        const conflictWarnings = (hasOverride && currentVal)
+          ? computeSubstitutionWarnings(day, teacher, s.period, currentVal, overrideKey)
+          : [];
+        const conflictBadge = conflictWarnings.length
+          ? ` <span style="color:#dc3545;font-weight:700;cursor:help;" title="${esc(conflictWarnings.join(' '))}">⚠️</span>`
+          : '';
         return `<div class="dsp-sub-row">
           <span class="dsp-sub-label">P${s.period} · ${esc(s.periodDisplay)}<br>${esc(s.klass)} — ${esc(s.subject)}</span>
           <select class="${selectClasses.join(' ')}" data-override-key="${esc(overrideKey)}" onchange="setDspOverride(this)">
             ${options}
-          </select>
+          </select>${conflictBadge}
         </div>`;
       }).join("");
     }
@@ -5466,6 +5679,16 @@ function renderDailySubPlannerInContainer(container, summaryEl, day) {
     summaryEl.textContent = absentCount === 0
       ? "No teachers marked absent."
       : `${absentCount} absent · ${totalAbsentPeriods} period(s) to cover${uncovered ? ` · ⚠️ ${uncovered} unassigned` : " · ✅ all assigned"}`;
+  }
+}
+
+function refreshBothSubstitutionViews(day) {
+  if (document.getElementById('dsp-table-container')) renderDailySubPlanner();
+  const container = document.getElementById('dsp-table-container-view');
+  const summaryEl = document.getElementById('dsp-summary-view');
+  if (container) {
+    const viewDay = document.getElementById('dsp-day-select-view')?.value || day || DAYS[0];
+    renderDailySubPlannerInContainer(container, summaryEl, viewDay);
   }
 }
 
@@ -5491,36 +5714,15 @@ toggleDspAbsent = function(teacher, checked, day) {
     });
   }
   saveDspState();
-
-  // Refresh whichever copies of the planner currently exist in the DOM. Each copy is
-  // refreshed using ITS OWN day selector (not the day that was just edited), so the
-  // tab and the standalone view can independently show different days without one
-  // overwriting the other's display.
-  if (document.getElementById('dsp-table-container')) renderDailySubPlanner();
-  const container = document.getElementById('dsp-table-container-view');
-  const summaryEl = document.getElementById('dsp-summary-view');
-  if (container) {
-    const viewDay = document.getElementById('dsp-day-select-view')?.value || day;
-    renderDailySubPlannerInContainer(container, summaryEl, viewDay);
-  }
+  refreshBothSubstitutionViews(day);
 };
 
-// Override setDspOverride to work with both views. The day is pulled straight out of
-// the override key (day|teacher|period) that was baked in at render time, rather than
-// re-read from a <select> that may not be the one the user is looking at.
+// Keep the shared setDspOverride() implementation for both planner copies.
+// The data-override-key carries the exact day/absent-teacher/period, so the warning logic
+// never depends on whichever hidden day selector happens to exist in the DOM.
 const originalSetDspOverride = setDspOverride;
 setDspOverride = function(selectEl) {
-  const key = selectEl.dataset.overrideKey;
-  dspOverrides[key] = selectEl.value;
-  saveDspState();
-
-  if (document.getElementById('dsp-table-container')) renderDailySubPlanner();
-  const container = document.getElementById('dsp-table-container-view');
-  const summaryEl = document.getElementById('dsp-summary-view');
-  if (container) {
-    const viewDay = document.getElementById('dsp-day-select-view')?.value || key.split('|')[0];
-    renderDailySubPlannerInContainer(container, summaryEl, viewDay);
-  }
+  originalSetDspOverride(selectEl);
 };
 
 
@@ -5778,6 +5980,243 @@ function exportSubstitutionPDF() {
     }
   }, 100);
 }
+
+// ============================================
+// PRINT A4 - SUMMARY VIEW / ONE PAGE (LANDSCAPE)
+// Uses the same summary-table logic as the A3 Summary printer,
+// but outputs to A4 and dynamically fits the table to one page.
+// ============================================
+document.getElementById("print-a4-btn")?.addEventListener("click", function() {
+  if (!schedule) {
+    showMessage('Generate timetable first', "error");
+    return;
+  }
+
+  // Open synchronously so popup blockers (especially mobile/iOS) are less likely to interfere.
+  const printWin = window.open('', '_blank');
+  if (!printWin) {
+    showMessage('Pop-up blocked. Please allow pop-ups to print.', "warn");
+    return;
+  }
+
+  showLoading();
+
+  setTimeout(() => {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "pt",
+        format: "a4"
+      });
+
+      const SCHOOL_NAME = "PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR";
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      const centerX = pageWidth / 2;
+      let yPos = 18;
+
+      // ========================================
+      // HEADER - same structure as A3 Summary
+      // ========================================
+      doc.setFontSize(13);
+      doc.setTextColor(74, 108, 247);
+      doc.text(SCHOOL_NAME, centerX, yPos, { align: 'center' });
+      yPos += 12;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0);
+      doc.text('Summary Timetable', centerX, yPos, { align: 'center' });
+      yPos += 8;
+
+      // ========================================
+      // PERIOD TIMES - same source/logic as A3 Summary
+      // ========================================
+      function formatTime(hours, minutes) {
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      }
+
+      const slots = [
+        { period: 1, startHour: 10, startMin: 55, endHour: 11, endMin: 40, isBreak: false },
+        { period: 2, startHour: 11, startMin: 40, endHour: 12, endMin: 20, isBreak: false },
+        { period: 3, startHour: 12, startMin: 20, endHour: 13, endMin: 0, isBreak: false },
+        { period: 4, startHour: 13, startMin: 0, endHour: 13, endMin: 40, isBreak: false },
+        { period: 'break', startHour: 13, startMin: 40, endHour: 14, endMin: 15, isBreak: true },
+        { period: 5, startHour: 14, startMin: 15, endHour: 15, endMin: 0, isBreak: false },
+        { period: 6, startHour: 15, startMin: 0, endHour: 15, endMin: 40, isBreak: false },
+        { period: 7, startHour: 15, startMin: 40, endHour: 16, endMin: 20, isBreak: false }
+      ];
+
+      // ========================================
+      // BUILD HEADERS
+      // ========================================
+      let headers = ["Class"];
+      for (const slot of slots) {
+        if (slot.isBreak) {
+          headers.push("Break");
+        } else {
+          const start = formatTime(slot.startHour, slot.startMin);
+          const end = formatTime(slot.endHour, slot.endMin);
+          headers.push(`P${slot.period}\n${start}-${end}`);
+        }
+      }
+
+      // ========================================
+      // BUILD EXACTLY THE SAME SUMMARY DATA AS A3
+      // ========================================
+      const classes = [...new Set(entries.map(e => e.klass))].sort((a, b) => {
+        const numA = parseInt(a) || 0;
+        const numB = parseInt(b) || 0;
+        return numA - numB;
+      });
+
+      const tableData = [];
+
+      for (const klass of classes) {
+        let row = [klass];
+
+        for (const slot of slots) {
+          if (slot.isBreak) {
+            row.push("☕");
+            continue;
+          }
+
+          const periodNum = slot.period;
+          let foundLessons = [];
+
+          for (const day of DAYS) {
+            const lessons = schedule.grid[day]?.[periodNum] || [];
+            const classLessons = lessons.filter(l => l.klass === klass);
+            if (classLessons.length > 0) {
+              classLessons.forEach(l => foundLessons.push({ ...l, day: day }));
+            }
+          }
+
+          if (foundLessons.length === 0) {
+            row.push("");
+          } else {
+            const uniqueMap = new Map();
+            foundLessons.forEach(l => {
+              const key = `${l.teacher}|||${l.subject}`;
+              if (!uniqueMap.has(key)) uniqueMap.set(key, l);
+            });
+
+            const uniqueLessons = Array.from(uniqueMap.values());
+            const cellContent = uniqueLessons.map(l => {
+              let text = `${l.teacher} (${l.subject})`;
+              const specialSubjects = ['Sanskrit', 'IT', 'B&W', 'Music', 'Art', 'PE', 'Games', 'Library', 'Umang', 'CCLE', 'Tejasvi'];
+              if (specialSubjects.some(s => l.subject.includes(s))) text += ` [${l.day}]`;
+              return text;
+            }).join("\n");
+            row.push(cellContent);
+          }
+        }
+        tableData.push(row);
+      }
+
+      // ========================================
+      // A4 TABLE - FIT TO ONE PAGE
+      // ========================================
+      doc.autoTable({
+        head: [headers],
+        body: tableData,
+        startY: yPos + 5,
+        styles: {
+          fontSize: 7,
+          cellPadding: 1.1,
+          valign: 'middle',
+          halign: 'center',
+          lineColor: [180, 180, 180],
+          lineWidth: 0.2,
+          overflow: 'linebreak'
+        },
+        headStyles: {
+          fillColor: [74, 108, 247],
+          textColor: [255, 255, 255],
+          fontSize: 6.2,
+          fontStyle: 'bold',
+          halign: 'center',
+          valign: 'middle'
+        },
+        columnStyles: {
+          0: {
+            cellWidth: 38,
+            fontSize: 7,
+            fontStyle: 'bold',
+            halign: 'left'
+          }
+        },
+        bodyStyles: {
+          valign: 'middle',
+          halign: 'center',
+          fontSize: 7
+        },
+        didDrawCell: function(data) {
+          if (headers[data.column.index] === "Break") {
+            data.cell.styles.fillColor = [245, 245, 245];
+            data.cell.styles.fontStyle = 'italic';
+            data.cell.styles.textColor = [150, 150, 150];
+            data.cell.styles.fontSize = 7;
+          }
+          if (data.cell.raw === "") data.cell.styles.textColor = [200, 200, 200];
+        },
+        margin: { left: 16, right: 16, top: yPos + 5, bottom: 18 },
+        pageBreak: 'auto',
+        showHead: 'everyPage',
+        tableWidth: 'auto'
+      });
+
+      // The compact A4 typography above is intentionally sized for the full summary.
+      // This keeps the Summary View on A4 landscape instead of reverting to the old
+      // current-grid/table print behaviour.
+
+      // ========================================
+      // FOOTER - same idea as A3 Summary
+      // ========================================
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(6);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 40, pageHeight - 8);
+        doc.text(SCHOOL_NAME, centerX, pageHeight - 8, { align: 'center' });
+      }
+
+      // ========================================
+      // OPEN FOR PRINT + MOBILE FALLBACK
+      // ========================================
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      if (printWin && !printWin.closed) {
+        printWin.location.href = pdfUrl;
+        try {
+          printWin.addEventListener('load', () => {
+            setTimeout(() => { try { printWin.print(); } catch (e) {} }, 400);
+          });
+        } catch (e) {}
+        showMessage("📄 A4 Summary PDF ready — opening for print...", "ok");
+      } else {
+        const a = document.createElement('a');
+        a.href = pdfUrl;
+        a.download = `Summary_Timetable_A4_${new Date().toISOString().slice(0, 10)}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showMessage("📄 Pop-up was blocked, so the A4 Summary PDF downloaded instead.", "warn");
+      }
+
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+      hideLoading();
+
+    } catch (e) {
+      console.error('A4 Summary print error:', e);
+      hideLoading();
+      if (printWin && !printWin.closed) printWin.close();
+      showMessage("Error generating A4 Summary: " + e.message, "error");
+    }
+  }, 100);
+});
 
 </script>
 </body>
