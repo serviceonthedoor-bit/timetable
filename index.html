@@ -3587,7 +3587,7 @@ function findSubstitutes(absentTeacher, day) {
     }
   }
   if (absentLessons.length === 0) return [];
-  const allTeachers = getAllTeachers().filter(t => t !== absentTeacher);
+  const allTeachers = getAllTeachers().filter(t => t !== absentTeacher && !(dspAbsent[day]?.has(t)));
   const results = [];
   for (const lesson of absentLessons) {
     const subs = [];
