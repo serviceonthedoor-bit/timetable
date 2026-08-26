@@ -1310,9 +1310,290 @@ footer {
 }
 
 
+
+/* ============================================================
+   TIMETABLE STUDIO — CLEAN UI LAYER
+   Visual-only refresh: existing IDs, classes and JS behavior are
+   intentionally preserved so timetable/substitution logic remains intact.
+   ============================================================ */
+:root {
+  --bg: #f4f7fb;
+  --bg-secondary: #eef2f7;
+  --bg-hover: #e9eef6;
+  --card: #ffffff;
+  --card-border: #e2e8f0;
+  --text: #172033;
+  --text-secondary: #42506a;
+  --text-muted: #718096;
+  --accent: #315efb;
+  --accent-light: #eaf0ff;
+  --accent-dark: #2449ca;
+  --border: #e2e8f0;
+  --border-light: #edf1f6;
+  --shadow: 0 8px 24px rgba(20, 32, 55, .06);
+  --radius: 14px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background:
+    radial-gradient(circle at 0 0, rgba(49,94,251,.07), transparent 28rem),
+    linear-gradient(180deg, #f8fafc 0%, #f4f7fb 100%);
+  color: var(--text);
+}
+
+.hero {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 18px 24px 16px;
+  background: rgba(255,255,255,.92);
+  border-bottom: 1px solid rgba(226,232,240,.9);
+  box-shadow: 0 4px 18px rgba(15,23,42,.05);
+  backdrop-filter: blur(14px);
+}
+.hero-inner {
+  max-width: 1420px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "badge title today"
+    ". subtitle today"
+    ". admin today";
+  column-gap: 14px;
+  align-items: center;
+}
+.hero .badge { grid-area: badge; align-self: start; margin-top: 4px; }
+.hero h1 { grid-area: title; font-size: clamp(1.45rem, 2.2vw, 2rem); letter-spacing: -.03em; }
+.hero p { grid-area: subtitle; color: var(--text-muted); margin-top: 3px; }
+#today-indicator { grid-area: today; text-align: right; white-space: nowrap; }
+#admin-mode-controls { grid-area: admin; justify-self: start; margin-top: 8px; }
+
+.main-layout { max-width: 1420px; margin: 0 auto; padding: 22px 24px 40px; }
+.main-tabs {
+  position: sticky;
+  top: 92px;
+  z-index: 40;
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
+  margin-bottom: 18px;
+  background: rgba(255,255,255,.95);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 5px 18px rgba(15,23,42,.06);
+  backdrop-filter: blur(10px);
+}
+.main-tab {
+  border: 0 !important;
+  border-radius: 9px !important;
+  padding: 9px 17px !important;
+  font-weight: 700 !important;
+  color: var(--text-muted) !important;
+  background: transparent !important;
+}
+.main-tab.active { background: var(--accent) !important; color: #fff !important; box-shadow: 0 3px 10px rgba(49,94,251,.22); }
+
+.card {
+  border: 1px solid var(--card-border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow) !important;
+  background: rgba(255,255,255,.97) !important;
+  margin-bottom: 18px;
+}
+.card-head {
+  padding-bottom: 14px !important;
+  border-bottom: 1px solid var(--border-light);
+}
+.card-head h2 { letter-spacing: -.015em; }
+.step {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+/* Keep setup compact without changing any controls or IDs. */
+.admin-section .card-head { cursor: default; }
+.field input, .field select, .field textarea, select, input, textarea {
+  border-radius: 9px !important;
+  border-color: #d6deea !important;
+  min-height: 38px;
+}
+.field input:focus, .field select:focus, select:focus, input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(49,94,251,.10) !important;
+}
+.btn { border-radius: 9px !important; font-weight: 650 !important; }
+.btn.primary, .btn.cta { box-shadow: 0 4px 12px rgba(49,94,251,.18); }
+
+.view-selector-wrap, .toolbar, .dsp-toolbar {
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 11px;
+  padding: 9px 11px;
+}
+.view-toggle-group { background: #eef2f7 !important; border-radius: 10px !important; padding: 4px !important; }
+.view-toggle-btn { border-radius: 7px !important; }
+.view-toggle-btn.active { box-shadow: 0 2px 8px rgba(15,23,42,.08); }
+
+.table-wrap, .table-scroll, .dsp-table-wrap { border-radius: 10px !important; border-color: var(--border) !important; }
+.teacher-table th, .timetable-grid th { background: #f6f8fb !important; }
+.teacher-table td { padding: 9px 11px; }
+.timetable-grid { border-radius: 10px; overflow: hidden; }
+.timetable-grid th, .timetable-grid td { padding: 6px 7px; }
+.timetable-grid .lesson-stack { border-radius: 7px; }
+
+#output-panel { scroll-margin-top: 120px; }
+#message { border-radius: 10px !important; box-shadow: 0 4px 12px rgba(15,23,42,.04); }
+
+/* Substitution deserves stronger visual hierarchy. */
+.dsp-card { border-left: 4px solid #ee5a24 !important; }
+.dsp-card .step { background: #fff4ed !important; color: #d9480f !important; }
+
+footer {
+  margin-top: 18px;
+  padding: 24px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .hero { position: relative; }
+  .hero-inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "badge today" "title title" "subtitle subtitle" "admin admin";
+  }
+  #today-indicator { text-align: right; font-size: .78rem; }
+  .main-layout { padding: 14px 12px 30px; }
+  .main-tabs { position: sticky; top: 8px; width: 100%; justify-content: center; }
+  .main-tab { flex: 1; }
+  .card { border-radius: 11px !important; }
+}
+
+@media (max-width: 600px) {
+  .hero { padding: 13px 14px; }
+  .hero h1 { font-size: 1.4rem; }
+  .hero p { font-size: .78rem; }
+  #today-indicator { font-size: .7rem; }
+  .main-layout { padding: 10px 8px 24px; }
+  .main-tabs { margin-bottom: 12px; }
+  .main-tab { padding: 8px 9px !important; font-size: .76rem !important; }
+  .card-head { padding: 14px !important; }
+  .card > :not(.card-head) { }
+  .toolbar, .view-selector-wrap, .dsp-toolbar { overflow-x: auto; }
+}
+
 </style>
+
+<style id="v2-ui">
+/* =========================================================
+   TIMETABLE STUDIO V2 — UI SHELL ONLY
+   Keeps all existing IDs, handlers and application logic intact.
+   ========================================================= */
+:root{
+  --v2-sidebar:#111827;
+  --v2-sidebar-2:#1f2937;
+  --v2-accent:#4f6ef7;
+  --v2-accent-2:#6d5dfc;
+  --v2-surface:#ffffff;
+  --v2-bg:#f5f7fb;
+  --v2-muted:#667085;
+  --v2-border:#e6e9f0;
+  --v2-shadow:0 10px 30px rgba(16,24,40,.07);
+}
+body{background:var(--v2-bg)!important;color:#172033!important}
+body.v2-app{padding-left:250px}
+.v2-sidebar{
+ position:fixed;z-index:1000;left:0;top:0;bottom:0;width:250px;
+ background:linear-gradient(180deg,var(--v2-sidebar),#0b1220);
+ color:#fff;padding:22px 14px;display:flex;flex-direction:column;
+ box-shadow:8px 0 28px rgba(15,23,42,.12)
+}
+.v2-brand{display:flex;align-items:center;gap:11px;padding:5px 10px 24px}
+.v2-brand-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--v2-accent),var(--v2-accent-2));font-size:21px;box-shadow:0 8px 20px rgba(79,110,247,.3)}
+.v2-brand strong{display:block;font-size:16px;letter-spacing:-.3px}.v2-brand small{display:block;color:#98a2b3;font-size:10px;margin-top:2px}
+.v2-section-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#667085;font-weight:800;padding:14px 12px 7px}
+.v2-nav{display:grid;gap:5px}.v2-nav button{border:0;background:transparent;color:#b9c1d0;text-align:left;padding:11px 12px;border-radius:10px;font:600 13px inherit;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.18s}
+.v2-nav button:hover{background:rgba(255,255,255,.07);color:#fff}.v2-nav button.active{background:linear-gradient(135deg,rgba(79,110,247,.95),rgba(109,93,252,.9));color:#fff;box-shadow:0 8px 20px rgba(79,110,247,.18)}
+.v2-nav .nav-icon{width:21px;text-align:center}.v2-sidebar-bottom{margin-top:auto}.v2-status{padding:11px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:11px;font-size:11px;color:#aab3c3}.v2-status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;margin-right:6px}
+.v2-mobile-menu{display:none;position:fixed;z-index:1100;left:12px;top:12px;border:0;border-radius:10px;background:#111827;color:#fff;width:42px;height:42px;font-size:19px;box-shadow:0 8px 20px rgba(0,0,0,.16)}
+body.v2-app .hero{margin:0!important;border-radius:0!important;background:linear-gradient(135deg,#ffffff 0%,#f7f8ff 60%,#eef1ff 100%)!important;border-bottom:1px solid var(--v2-border);box-shadow:none!important;position:relative!important}
+body.v2-app .hero-inner{max-width:none!important;padding:28px 34px 24px!important}
+body.v2-app .hero h1{font-size:32px!important;letter-spacing:-1.2px}
+body.v2-app .hero p{color:#667085!important;margin-top:5px!important}
+body.v2-app .main-layout{max-width:none!important;margin:0!important;padding:18px 26px 38px!important}
+body.v2-app .main-tabs{background:#fff!important;border:1px solid var(--v2-border)!important;border-radius:13px!important;padding:5px!important;box-shadow:0 4px 14px rgba(16,24,40,.04)!important;justify-content:flex-start!important;display:inline-flex!important}
+body.v2-app .main-tab{border-radius:9px!important;padding:9px 17px!important;font-size:12px!important}
+body.v2-app .card{border:1px solid var(--v2-border)!important;border-radius:15px!important;box-shadow:var(--v2-shadow)!important;background:#fff!important}
+body.v2-app .card-head{border-bottom:1px solid #eef0f4;padding-bottom:14px!important;margin-bottom:16px!important}
+body.v2-app .card-head h2{font-size:16px!important;letter-spacing:-.2px}
+body.v2-app .step{border-radius:9px!important}
+.v2-commandbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 15px;padding:12px 14px;background:#fff;border:1px solid var(--v2-border);border-radius:13px;box-shadow:0 4px 14px rgba(16,24,40,.04)}
+.v2-commandbar .v2-title{font-size:12px;font-weight:800;color:#344054}.v2-commandbar .v2-actions{display:flex;gap:7px;flex-wrap:wrap}.v2-commandbar .v2-action{border:1px solid var(--v2-border);background:#fff;border-radius:8px;padding:7px 10px;font:600 11px inherit;color:#475467;cursor:pointer}.v2-commandbar .v2-action:hover{border-color:#b8c2e9;color:var(--v2-accent);background:#f8f9ff}
+.v2-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}.v2-stat{background:#fff;border:1px solid var(--v2-border);border-radius:13px;padding:13px 15px;box-shadow:0 4px 14px rgba(16,24,40,.035)}.v2-stat .k{font-size:10px;color:#667085;text-transform:uppercase;letter-spacing:.65px;font-weight:800}.v2-stat .v{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-top:4px;color:#172033}.v2-stat .s{font-size:10px;color:#98a2b3;margin-top:2px}
+.v2-dashboard{display:none}
+.v2-dashboard.active{display:block;animation:fadeIn .22s ease}
+.v2-dashboard-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 16px}
+.v2-dashboard-head h2{font-size:22px;letter-spacing:-.5px;margin:0}
+.v2-dashboard-head p{font-size:12px;color:#667085;margin:4px 0 0}
+.v2-dashboard-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.v2-dashboard-grid{transition:.2s ease;overflow:hidden}.v2-dashboard-grid.v2-collapsed{display:none}
+.v2-dashboard-card{background:#fff;border:1px solid var(--v2-border);border-radius:14px;padding:13px;box-shadow:0 6px 18px rgba(16,24,40,.045)}
+.v2-dashboard-card .dk{font-size:9px;text-transform:uppercase;letter-spacing:.6px;font-weight:800;color:#667085}
+.v2-dashboard-card .dv{font-size:20px;font-weight:800;letter-spacing:-.5px;margin-top:4px}
+.v2-dashboard-card .ds{font-size:10px;color:#98a2b3;margin-top:2px}
+.v2-dashboard-layout{display:grid;grid-template-columns:1.35fr .65fr;gap:16px}
+.v2-dashboard-panel{background:#fff;border:1px solid var(--v2-border);border-radius:14px;padding:17px;box-shadow:0 6px 18px rgba(16,24,40,.045)}
+.v2-dashboard-panel h3{font-size:13px;margin:0 0 12px}
+.v2-dashboard-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.v2-dashboard-action{border:1px solid var(--v2-border);background:#f8f9fc;border-radius:9px;padding:10px 12px;text-align:left;font:700 11px inherit;color:#344054;cursor:pointer}
+.v2-dashboard-action:hover{border-color:#b8c2e9;background:#f8f9ff;color:var(--v2-accent)}
+.v2-dashboard-table{width:100%;border-collapse:collapse;font-size:11px}
+.v2-dashboard-table th,.v2-dashboard-table td{padding:8px 7px;border-bottom:1px solid #eef0f4;text-align:left}
+.v2-dashboard-table th{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#98a2b3}
+.v2-dashboard-empty{text-align:center;padding:22px 10px;color:#98a2b3;font-size:11px}
+.v2-dashboard-status{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#f8f9fc;border:1px solid #eef0f4;font-size:11px;color:#475467}
+.v2-dashboard-status-dot{width:8px;height:8px;border-radius:50%;background:#34d399;flex:none}
+@media(max-width:1050px){.v2-dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v2-dashboard-layout{grid-template-columns:1fr}}
+@media(max-width:640px){.v2-dashboard-grid{grid-template-columns:1fr 1fr}.v2-dashboard-layout{grid-template-columns:1fr}.v2-dashboard-head{align-items:flex-start;flex-direction:column}.v2-dashboard-actions{grid-template-columns:1fr}}
+
+body.v2-app .toolbar{border-radius:11px!important;border:1px solid var(--v2-border)!important;background:#f8f9fc!important;padding:8px!important}
+body.v2-app .view-selector-wrap{padding:8px 0 13px!important}
+body.v2-app #timetable-container{border-radius:12px;overflow:auto}
+body.v2-app .dsp-card{border-left:0!important;border-top:3px solid #ee5a24!important}
+body.v2-app footer{margin-left:0!important;background:#eef1f7!important;color:#7b8494!important;border-top:1px solid var(--v2-border)}
+body.v2-app .admin-section{background:linear-gradient(180deg,#fff,#fcfcff)!important}
+body.v2-app .admin-mode-controls{right:28px!important;top:22px!important}
+body.v2-app .mobile-nav{z-index:1050}
+@media(max-width:1050px){body.v2-app{padding-left:0}.v2-sidebar{transform:translateX(-100%);transition:.22s}.v2-sidebar.open{transform:translateX(0)}.v2-mobile-menu{display:block}.v2-stats{grid-template-columns:repeat(2,minmax(0,1fr))}body.v2-app .hero-inner{padding-left:70px!important}}body.v2-app.sidebar-collapsed{padding-left:0}body.v2-app.sidebar-collapsed .v2-sidebar{transform:translateX(-100%);transition:.22s}body.v2-app.sidebar-collapsed .v2-sidebar.open{transform:translateX(0)}body.v2-app.sidebar-collapsed .v2-mobile-menu{display:block}body.v2-app.sidebar-collapsed .hero-inner{padding-left:70px!important}
+@media(max-width:640px){.v2-stats{grid-template-columns:1fr 1fr}.v2-commandbar{align-items:flex-start;flex-direction:column}.v2-commandbar .v2-actions{width:100%}.v2-commandbar .v2-action{flex:1}body.v2-app .main-layout{padding:12px 10px 28px!important}body.v2-app .hero h1{font-size:25px!important}.v2-stat .v{font-size:18px}}
+</style>
+
 </head>
-<body>
+
+<body class="v2-app">
+<button class="v2-mobile-menu" id="v2-mobile-menu" aria-label="Open menu">☰</button>
+<aside class="v2-sidebar" id="v2-sidebar">
+  <div class="v2-brand"><div class="v2-brand-icon">📅</div><div><strong>Timetable Studio</strong><small>School scheduling system</small></div></div>
+  <div class="v2-section-label">Workspace</div>
+  <nav class="v2-nav" aria-label="Main navigation">
+    <button class="active" data-v2-dashboard="true"><span class="nav-icon">🏠</span>Dashboard</button>
+    <button data-v2-tab="timetable"><span class="nav-icon">📅</span>Timetable</button>
+    <button data-v2-tab="substitution"><span class="nav-icon">🔄</span>Substitution</button>
+    <button data-v2-view="workload"><span class="nav-icon">📊</span>Workload</button>
+  </nav>
+  <div class="v2-section-label">Views</div>
+  <nav class="v2-nav">
+    <button data-v2-view="schedule"><span class="nav-icon">▦</span>Grid View</button>
+    <button data-v2-view="teacher"><span class="nav-icon">👩‍🏫</span>Teacher View</button>
+    <button data-v2-view="summary"><span class="nav-icon">📋</span>Summary</button>
+  </nav>
+  <div class="v2-sidebar-bottom">
+    <div class="v2-status"><span class="v2-status-dot"></span><span id="v2-status-text">Auto-save active</span></div>
+    <div class="v2-section-label">Administration</div>
+    <nav class="v2-nav"><button id="v2-admin-btn"><span class="nav-icon">🔐</span>Admin Access</button></nav>
+  </div>
+</aside>
 
 <div class="mobile-badge" id="mobileBadge">📱 Mobile View</div>
 
@@ -1354,12 +1635,70 @@ footer {
 </div>
 
 <div class="main-layout">
+  <div class="v2-commandbar">
+    <div><div class="v2-title" id="v2-context-title">School Timetable</div><div style="font-size:10px;color:#98a2b3;margin-top:2px">Manage schedules, teachers and daily coverage</div></div>
+    <div class="v2-actions">
+      <button class="v2-action" onclick="showToday()">📅 Today</button>
+      <button class="v2-action" onclick="showFullWeek()">📊 Full Week</button>
+      <button class="v2-action" onclick="shareSchedule()">📤 Share</button>
+      <button class="v2-action" onclick="document.getElementById('admin-link')?.click()">⚙️ Settings</button>
+    </div>
+  </div>
   <div class="main-tabs" id="main-tabs-container">
     <button class="main-tab active" data-tab="timetable">📅 Timetable</button>
     <button class="main-tab" data-tab="substitution">🔄 Substitution</button>
   </div>
 
-  <div id="timetable-tab" class="tab-content active">
+
+  <div id="dashboard-tab" class="v2-dashboard active">
+        <div class="v2-dashboard-head">
+      <div>
+        <h2>Dashboard</h2>
+        <p>Live overview of your timetable, staff and daily coverage.</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="v2-dashboard-status">
+          <span class="v2-dashboard-status-dot"></span>
+          <span id="v2-dashboard-status">Ready</span>
+        </div>
+        <button id="v2-stats-toggle" class="v2-dashboard-status" style="cursor:pointer;border:1px solid var(--v2-border);">
+          <span id="v2-stats-toggle-icon" style="display:inline-block;transition:.18s;">▾</span>
+          <span id="v2-stats-toggle-label">Hide stats</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="v2-dashboard-grid">
+      <div class="v2-dashboard-card"><div class="dk">Teachers</div><div class="dv" id="dash-teachers">0</div><div class="ds">Configured staff</div></div>
+      <div class="v2-dashboard-card"><div class="dk">Classes</div><div class="dv" id="dash-classes">0</div><div class="ds">Unique classes</div></div>
+      <div class="v2-dashboard-card"><div class="dk">Lessons</div><div class="dv" id="dash-lessons">0</div><div class="ds">Configured entries</div></div>
+      <div class="v2-dashboard-card"><div class="dk">Locked</div><div class="dv" id="dash-locked">0</div><div class="ds">Protected positions</div></div>
+      <div class="v2-dashboard-card"><div class="dk">Scheduled</div><div class="dv" id="dash-scheduled">0</div><div class="ds">Lessons in generated grid</div></div>
+      <div class="v2-dashboard-card"><div class="dk">Today</div><div class="dv" id="dash-today">—</div><div class="ds">Current working day</div></div>
+      <div class="v2-dashboard-card"><div class="dk">Absent</div><div class="dv" id="dash-absent">0</div><div class="ds">Marked absent today</div></div>
+      <div class="v2-dashboard-card"><div class="dk">Coverage</div><div class="dv" id="dash-coverage">—</div><div class="ds">Today's substitution status</div></div>
+    </div>
+
+    <div class="v2-dashboard-layout">
+      <div class="v2-dashboard-panel">
+        <h3>Teacher workload</h3>
+        <div id="dash-workload-table"></div>
+      </div>
+      <div class="v2-dashboard-panel">
+        <h3>Quick actions</h3>
+        <div class="v2-dashboard-actions">
+          <button class="v2-dashboard-action" data-dash-action="timetable">📅 Open Timetable</button>
+          <button class="v2-dashboard-action" data-dash-action="substitution">🔄 Substitution</button>
+          <button class="v2-dashboard-action" data-dash-action="summary">📋 Summary View</button>
+          <button class="v2-dashboard-action" data-dash-action="workload">📊 Workload</button>
+          <button class="v2-dashboard-action" data-dash-action="today">📅 Today's Schedule</button>
+          <button class="v2-dashboard-action" data-dash-action="generate">🚀 Generate / Refresh</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="timetable-tab" class="tab-content">
     <!-- School Setup - Admin Only -->
     <div class="card admin-section">
       <div class="card-head">
@@ -1476,7 +1815,7 @@ footer {
         <span style="font-size:0.7rem;color:var(--text-muted);margin-left:8px;" id="lock-count">0 locked</span>
       </div>
 
-      <div id="teacher-list-wrap" class="hidden">
+      <div id="teacher-list-wrap">
         <div class="list-head">
           <h3>Teacher Data <span class="count" id="count-pill">0</span></h3>
           <div style="display:flex; gap:8px;">
@@ -1560,13 +1899,11 @@ footer {
         <div class="toolbar-right">
           <button id="regenerate-btn" class="btn ghost small">🔄 Shuffle</button>
           <button id="summary-btn" class="btn ghost small" onclick="showWorkloadSummary()">📊 Workload</button>
-          <button id="print-btn" class="btn ghost small">🖨️ Print</button>
-          <button id="pdf-btn" class="btn primary small">📄 PDF</button>
           <button id="excel-btn" class="btn ghost small">📊 Excel</button>
+          <button id="print-summary-btn" class="btn ghost small" style="border-color: var(--accent); color: var(--accent);">🖨️ Print Summary (A3)</button>
+          <button id="print-a4-btn" class="btn ghost small" style="border-color: #28a745; color: #28a745;">🖨️ Print A4 (Fit 1 Page)</button>
           <button onclick="lockAllCurrentPositions()" class="btn warning small">🔒 Lock Current</button>
           <button onclick="unlockAllLessons()" class="btn ghost small">🔓 Unlock All</button>
-	  <button id="print-summary-btn" class="btn ghost small" style="border-color: var(--accent); color: var(--accent);">	🖨️ Print Summary (A3)</button>
-<button id="print-a4-btn" class="btn ghost small" style="border-color: #28a745; color: #28a745;">🖨️ Print A4 (Fit 1 Page)</button>
         </div>
       </div>
       <div id="timetable-container"></div>
@@ -1865,9 +2202,14 @@ function loadFromLocalStorage() {
           if (e.period === undefined) e.period = null;
           if (e.day === undefined) e.day = null;
         });
+        // Purge stale "None (...)" placeholder rows saved from old data
+        entries = entries.filter(e => isValidSubstitutionTeacher(e.teacher));
       }
       if (data.lockedLessons) lockedLessons = data.lockedLessons;
       if (data.dropdownOptions) dropdownOptions = data.dropdownOptions;
+      if (dropdownOptions && Array.isArray(dropdownOptions.teachers)) {
+        dropdownOptions.teachers = dropdownOptions.teachers.filter(isValidSubstitutionTeacher);
+      }
       renderList();
       populateDropdownLists();
       showMessage(`Loaded ${entries.length} entries`, "ok");
@@ -1964,6 +2306,7 @@ function addOptionIfNew(listName, value) {
   if (!value) return;
   const v = value.trim();
   if (!v) return;
+  if (listName === 'teachers' && isInvalidSubstitutionTeacherName(v)) return;
   const list = dropdownOptions[listName];
   if (!list.some(x => x.toLowerCase() === v.toLowerCase())) {
     list.push(v);
@@ -2237,16 +2580,14 @@ function renderList() {
   sortEntriesByClass();
   
   if (entries.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--text-light);padding:20px;font-size:0.9rem;">No teachers added yet</td></tr>`;
-    const wrap = document.getElementById("teacher-list-wrap");
-    if (wrap) wrap.classList.add("hidden");
-    const pill = document.getElementById("count-pill");
-    if (pill) pill.textContent = "0";
-    const genBtnTop = document.getElementById("generate-btn-top");
-    if (genBtnTop) genBtnTop.disabled = true;
-    updateLockCount();
-    return;
-  }
+  tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--text-light);padding:20px;font-size:0.9rem;">No teachers added yet</td></tr>`;
+  const pill = document.getElementById("count-pill");
+  if (pill) pill.textContent = "0";
+  const genBtnTop = document.getElementById("generate-btn-top");
+  if (genBtnTop) genBtnTop.disabled = true;
+  updateLockCount();
+  return;
+}
   
   entries.forEach((x, i) => {
     const tr = document.createElement("tr");
@@ -2403,7 +2744,7 @@ window.sortTable = sortTable;
 function updateViewSelector() {
   const selector = document.getElementById("view-selector");
   if (!selector) return;
-  const teachers = [...new Set(entries.map(e => e.teacher))];
+  const teachers = [...new Set(entries.map(e => e.teacher))].filter(isValidSubstitutionTeacher);
   const classes = [...new Set(entries.map(e => e.klass))];
   let html = `<option value="consolidated">📋 Timetable (All)</option>`;
   html += `<option value="summary">📊 Summary View</option>`;
@@ -3487,12 +3828,28 @@ window.exportToGoogleSheets = exportToGoogleSheets;
 // ============================================
 // SUBSTITUTION FUNCTIONS
 // ============================================
+function isInvalidSubstitutionTeacherName(teacher) {
+  const t = String(teacher ?? '')
+    .replace(/\u00a0/g, ' ')
+    .trim()
+    .toLowerCase();
+  return t === '' || t === 'null' || t === 'undefined' || t.startsWith('none');
+}
+
+function isValidSubstitutionTeacher(teacher) {
+  const t = String(teacher ?? '').trim();
+  return !!t && !isInvalidSubstitutionTeacherName(t);
+}
+
 function getAllTeachers() {
-  return [...new Set(entries.map(e => e.teacher))];
+  return [...new Set(entries
+    .map(e => String(e.teacher ?? '').trim())
+    .filter(isValidSubstitutionTeacher)
+  )];
 }
 
 function populateSubstitutionDropdowns() {
-  const teachers = getAllTeachers();
+  const teachers = getAllTeachers().filter(isValidSubstitutionTeacher);
   const locateSelect = document.getElementById("sub-teacher-select");
   if (locateSelect) {
     locateSelect.innerHTML = '<option value="">-- Select a teacher --</option>';
@@ -3546,6 +3903,7 @@ function displayTeacherScheduleSub(teacher) {
   }
   html += '</tbody></table></div>';
   container.innerHTML = html;
+    removeInvalidSubstitutionOptionsFromDOM();
   document.getElementById("sub-teacher-schedule").style.display = "block";
 }
 
@@ -3641,6 +3999,7 @@ function displayCoverage(absentTeacher, day) {
     html += `</div></div>`;
   }
   container.innerHTML = html;
+    removeInvalidSubstitutionOptionsFromDOM();
 }
 
 function confirmSubstitution(absent, sub, klass, subject, day, period) {
@@ -3708,16 +4067,26 @@ function loadDspState() {
     if (!raw) return;
     const parsed = JSON.parse(raw);
     dspAbsent = {};
-    for (const day in (parsed.absent || {})) dspAbsent[day] = new Set(parsed.absent[day]);
-    dspOverrides = parsed.overrides || {};
+    for (const day in (parsed.absent || {})) dspAbsent[day] = new Set((parsed.absent[day] || []).filter(isValidSubstitutionTeacher));
+    dspOverrides = {};
+    for (const key in (parsed.overrides || {})) {
+      const parts = key.split('|');
+      const value = parsed.overrides[key];
+      if (parts.length >= 3 && isValidSubstitutionPeriod(parts[2]) && isValidSubstitutionTeacher(value)) dspOverrides[key] = value;
+    }
   } catch (e) { /* ignore corrupt state */ }
 }
 
 function saveDspState() {
   try {
     const absentPlain = {};
-    for (const day in dspAbsent) absentPlain[day] = [...dspAbsent[day]];
-    localStorage.setItem("dspState", JSON.stringify({ absent: absentPlain, overrides: dspOverrides }));
+    for (const day in dspAbsent) absentPlain[day] = [...dspAbsent[day]].filter(isValidSubstitutionTeacher);
+    const cleanOverrides = {};
+    for (const key in dspOverrides) {
+      const parts = key.split('|');
+      if (parts.length >= 3 && isValidSubstitutionPeriod(parts[2]) && isValidSubstitutionTeacher(dspOverrides[key])) cleanOverrides[key] = dspOverrides[key];
+    }
+    localStorage.setItem("dspState", JSON.stringify({ absent: absentPlain, overrides: cleanOverrides }));
   } catch (e) { /* ignore quota errors */ }
 }
 
@@ -3791,10 +4160,11 @@ function buildDailySubstitutionPlan(day, absentSet) {
 
   const absentLessons = [];
   for (const absentTeacher of absentSet) {
+    if (!isValidSubstitutionTeacher(absentTeacher)) continue;
     for (const period in (schedule.grid[day] || {})) {
       if (!isValidSubstitutionPeriod(period)) continue;
       for (const l of schedule.grid[day][period]) {
-        if (l.teacher === absentTeacher) {
+        if (isValidSubstitutionTeacher(l.teacher) && l.teacher === absentTeacher) {
           absentLessons.push({
             absentTeacher,
             period: parseInt(period, 10),
@@ -3807,7 +4177,7 @@ function buildDailySubstitutionPlan(day, absentSet) {
   }
   absentLessons.sort((a, b) => a.period - b.period || a.absentTeacher.localeCompare(b.absentTeacher));
 
-  const pool = getAllTeachers().filter(t => !absentSet.has(t));
+  const pool = getAllTeachers().filter(isValidSubstitutionTeacher).filter(t => !absentSet.has(t));
 
   for (const lesson of absentLessons) {
     const overrideKey = `${day}|${lesson.absentTeacher}|${lesson.period}|${lesson.klass}`;
@@ -3894,7 +4264,7 @@ function renderDailySubPlanner() {
   }
 
   const day = document.getElementById("dsp-day-select")?.value || DAYS[0];
-  const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
+  const teachers = getAllTeachers().filter(isValidSubstitutionTeacher).sort((a, b) => a.localeCompare(b));
   if (!dspAbsent[day]) dspAbsent[day] = new Set();
   const absentSet = dspAbsent[day];
   const workloadToday = computeDailyWorkload(day);
@@ -3924,18 +4294,21 @@ function renderDailySubPlanner() {
       subCell = `<span class="dsp-empty-note">No periods scheduled this day — no coverage needed.</span>`;
     } else {
       const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet, dailySubPlan);
-      const otherTeachers = teachers.filter(t => t !== teacher && !absentSet.has(t));
+      const otherTeachers = teachers.filter(t => isValidSubstitutionTeacher(t) && t !== teacher && !absentSet.has(t));
       subCell = suggestions.map(s => {
 	const overrideKey = `${day}|${teacher}|${s.period}|${s.klass}`;
         const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey);
-        const currentVal = hasOverride ? dspOverrides[overrideKey] : (s.suggested || "");
+        const rawCurrentVal = hasOverride ? dspOverrides[overrideKey] : (s.suggested || "");
+        const currentVal = isValidSubstitutionTeacher(rawCurrentVal) ? rawCurrentVal : "";
         totalAbsentPeriods++;
         if (!currentVal) uncovered++;
                 const selectClasses = ["dsp-sub-select"];
         if (!currentVal) selectClasses.push("dsp-unassigned");
         else if (hasOverride && currentVal !== s.suggested) selectClasses.push("dsp-overridden");
         const options = [`<option value="">-- Unassigned --</option>`]
-          .concat(otherTeachers.map(t => `<option value="${esc(t)}" ${t === currentVal ? "selected" : ""}>${esc(t)}</option>`))
+          .concat(otherTeachers
+            .filter(isValidSubstitutionTeacher)
+            .map(t => `<option value="${esc(t)}" ${t === currentVal ? "selected" : ""}>${esc(t)}</option>`))
           .join("");
         // Persistent conflict marker: only manual overrides can carry a real conflict,
         // since the automatic plan (buildDailySubstitutionPlan) never produces one.
@@ -3963,6 +4336,7 @@ function renderDailySubPlanner() {
   }
   html += "</tbody></table>";
   container.innerHTML = html;
+    removeInvalidSubstitutionOptionsFromDOM();
 
   if (summaryEl) {
     const absentCount = absentSet.size;
@@ -4376,6 +4750,8 @@ function checkAdminStatus() {
 function applyAdminMode() {
   isAdminMode = true;
   localStorage.setItem("timetableAdminMode", "true");
+  // Sidebar always visible in admin mode
+  document.body.classList.remove("sidebar-collapsed");
   
   // Show admin sections
   document.querySelectorAll(".admin-section").forEach(el => {
@@ -4410,7 +4786,9 @@ function applyAdminMode() {
 function applyUserMode() {
   isAdminMode = false;
   localStorage.removeItem("timetableAdminMode");
-  
+  // Collapse sidebar by default in user mode; toggle button (☰) reveals it
+  document.body.classList.add("sidebar-collapsed");
+  document.getElementById("v2-sidebar")?.classList.remove("open");  
   // Hide admin sections
   document.querySelectorAll(".admin-section").forEach(el => {
     el.classList.add("hidden-admin");
@@ -4503,7 +4881,7 @@ document.querySelectorAll(".user-tab-btn").forEach(btn => {
     } else if (view === "workload") {
       showWorkloadSummary();
     } else if (view === "teacher") {
-      const teachers = [...new Set(entries.map(e => e.teacher))];
+      const teachers = [...new Set(entries.map(e => e.teacher))].filter(isValidSubstitutionTeacher);
       if (teachers.length === 0) { showMessage("No teachers found", "warn"); return; }
       
       const selected = prompt(`Select a Teacher:\n${teachers.join(", ")}`);
@@ -5534,12 +5912,7 @@ setViewMode = function(mode) {
               </select>
             </div>
             <button id="dsp-refresh-btn-view" class="btn ghost small">🔄 Refresh Suggestions</button>
-<!-- ADD THIS PDF BUTTON -->
-  <button onclick="exportSubstitutionPDF()" class="btn primary small" style="background: #28a745; border-color: #28a745;">
-    📄 Print Substitution
-  </button>
-  
-  <span id="dsp-summary-view" style="font-size:0.8rem;color:var(--text-muted);"></span>
+<span id="dsp-summary-view" style="font-size:0.8rem;color:var(--text-muted);"></span>
           </div>
           <div id="dsp-table-container-view" class="dsp-table-wrap"></div>
         </div>
@@ -5560,6 +5933,12 @@ setViewMode = function(mode) {
 };
 
 // Initialize substitution view
+function removeInvalidSubstitutionOptionsFromDOM() {
+  document.querySelectorAll('select.dsp-sub-select option, #sub-teacher-select option').forEach(opt => {
+    if (isInvalidSubstitutionTeacherName(opt.value) || isInvalidSubstitutionTeacherName(opt.textContent)) opt.remove();
+  });
+}
+
 function initSubstitutionView() {
   const daySelect = document.getElementById('dsp-day-select-view');
   const refreshBtn = document.getElementById('dsp-refresh-btn-view');
@@ -5605,7 +5984,7 @@ function renderDailySubPlannerInContainer(container, summaryEl, day) {
     return;
   }
   
-  const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
+  const teachers = getAllTeachers().filter(isValidSubstitutionTeacher).sort((a, b) => a.localeCompare(b));
   if (!dspAbsent[day]) dspAbsent[day] = new Set();
   const absentSet = dspAbsent[day];
     const workloadToday = computeDailyWorkload(day);
@@ -5634,18 +6013,19 @@ function renderDailySubPlannerInContainer(container, summaryEl, day) {
       subCell = `<span class="dsp-empty-note">No periods scheduled this day — no coverage needed.</span>`;
     } else {
       const suggestions = suggestSubstitutesForTeacher(teacher, day, absentSet, dailySubPlan);
-      const otherTeachers = teachers.filter(t => t !== teacher && !absentSet.has(t));
+      const otherTeachers = teachers.filter(t => isValidSubstitutionTeacher(t) && t !== teacher && !absentSet.has(t));
       subCell = suggestions.map(s => {
 	const overrideKey = `${day}|${teacher}|${s.period}|${s.klass}`;
         const hasOverride = Object.prototype.hasOwnProperty.call(dspOverrides, overrideKey);
-        const currentVal = hasOverride ? dspOverrides[overrideKey] : (s.suggested || "");
+        const rawCurrentVal = hasOverride ? dspOverrides[overrideKey] : (s.suggested || "");
+        const currentVal = isValidSubstitutionTeacher(rawCurrentVal) ? rawCurrentVal : "";
         totalAbsentPeriods++;
         if (!currentVal) uncovered++;
                 const selectClasses = ["dsp-sub-select"];
         if (!currentVal) selectClasses.push("dsp-unassigned");
         else if (hasOverride && currentVal !== s.suggested) selectClasses.push("dsp-overridden");
         const options = [`<option value="">-- Unassigned --</option>`]
-          .concat(otherTeachers.map(t => `<option value="${esc(t)}" ${t === currentVal ? "selected" : ""}>${esc(t)}</option>`))
+          .concat(otherTeachers.filter(isValidSubstitutionTeacher).map(t => `<option value="${esc(t)}" ${t === currentVal ? "selected" : ""}>${esc(t)}</option>`))
           .join("");
         // Persistent conflict marker: only manual overrides can carry a real conflict,
         // since the automatic plan (buildDailySubstitutionPlan) never produces one.
@@ -5673,6 +6053,7 @@ function renderDailySubPlannerInContainer(container, summaryEl, day) {
   }
   html += "</tbody></table>";
   container.innerHTML = html;
+    removeInvalidSubstitutionOptionsFromDOM();
   
   if (summaryEl) {
     const absentCount = absentSet.size;
@@ -5820,7 +6201,7 @@ function exportSubstitutionPDF() {
       // ========================================
       // BUILD TABLE DATA
       // ========================================
-      const teachers = getAllTeachers().sort((a, b) => a.localeCompare(b));
+      const teachers = getAllTeachers().filter(isValidSubstitutionTeacher).sort((a, b) => a.localeCompare(b));
       const tableData = [];
       let totalAbsent = 0;
       
@@ -6014,20 +6395,20 @@ document.getElementById("print-a4-btn")?.addEventListener("click", function() {
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       const centerX = pageWidth / 2;
-      let yPos = 18;
+      let yPos = 12;
 
       // ========================================
       // HEADER - same structure as A3 Summary
       // ========================================
-      doc.setFontSize(13);
+      doc.setFontSize(10);
       doc.setTextColor(74, 108, 247);
       doc.text(SCHOOL_NAME, centerX, yPos, { align: 'center' });
-      yPos += 12;
+      yPos += 9;
 
-      doc.setFontSize(10);
+      doc.setFontSize(8);
       doc.setTextColor(0);
       doc.text('Summary Timetable', centerX, yPos, { align: 'center' });
-      yPos += 8;
+      yPos += 5;
 
       // ========================================
       // PERIOD TIMES - same source/logic as A3 Summary
@@ -6117,13 +6498,13 @@ document.getElementById("print-a4-btn")?.addEventListener("click", function() {
       // ========================================
       // A4 TABLE - FIT TO ONE PAGE
       // ========================================
-      doc.autoTable({
+        doc.autoTable({
         head: [headers],
         body: tableData,
         startY: yPos + 5,
         styles: {
-          fontSize: 7,
-          cellPadding: 1.1,
+          fontSize: 6.3,
+          cellPadding: 0.9,
           valign: 'middle',
           halign: 'center',
           lineColor: [180, 180, 180],
@@ -6133,15 +6514,15 @@ document.getElementById("print-a4-btn")?.addEventListener("click", function() {
         headStyles: {
           fillColor: [74, 108, 247],
           textColor: [255, 255, 255],
-          fontSize: 6.2,
+          fontSize: 6.3,
           fontStyle: 'bold',
           halign: 'center',
           valign: 'middle'
         },
         columnStyles: {
           0: {
-            cellWidth: 38,
-            fontSize: 7,
+            cellWidth: 36,
+            fontSize: 6.3,
             fontStyle: 'bold',
             halign: 'left'
           }
@@ -6149,7 +6530,7 @@ document.getElementById("print-a4-btn")?.addEventListener("click", function() {
         bodyStyles: {
           valign: 'middle',
           halign: 'center',
-          fontSize: 7
+          fontSize: 6.3
         },
         didDrawCell: function(data) {
           if (headers[data.column.index] === "Break") {
@@ -6160,7 +6541,7 @@ document.getElementById("print-a4-btn")?.addEventListener("click", function() {
           }
           if (data.cell.raw === "") data.cell.styles.textColor = [200, 200, 200];
         },
-        margin: { left: 16, right: 16, top: yPos + 5, bottom: 18 },
+        margin: { left: 12, right: 12, top: yPos + 5, bottom: 10 },
         pageBreak: 'auto',
         showHead: 'everyPage',
         tableWidth: 'auto'
@@ -6218,6 +6599,225 @@ document.getElementById("print-a4-btn")?.addEventListener("click", function() {
   }, 100);
 });
 
+</script>
+
+
+
+<script id="v2-ui-script-safe">
+(function(){
+  function q(s){return document.querySelector(s)}
+  function dashboard(show){
+    var d=q("#dashboard-tab"), tabs=q("#main-tabs-container");
+    if(d) d.classList.toggle("active", !!show);
+    if(tabs) tabs.style.display = show ? "none" : "";
+    document.querySelectorAll(".v2-nav button").forEach(function(b){
+      if(b.hasAttribute("data-v2-dashboard")) b.classList.toggle("active", !!show);
+      else if(show) b.classList.remove("active");
+    });
+    if(show && typeof window.updateV2Dashboard==="function") window.updateV2Dashboard();
+  }
+  window.showV2Dashboard = function(){ dashboard(true); };
+
+  document.addEventListener("click",function(e){
+    var el=e.target; if(!el || !el.closest) return;
+
+    var b=el.closest(".v2-nav button[data-v2-dashboard]");
+    if(b){ dashboard(true); return; }
+
+    b=el.closest(".v2-nav button[data-v2-tab]");
+    if(b){
+      dashboard(false);
+      var t=q('.main-tab[data-tab="'+b.getAttribute("data-v2-tab")+'"]');
+      if(t) t.click();
+      return;
+    }
+
+    b=el.closest(".v2-nav button[data-v2-view]");
+    if(b){
+      dashboard(false);
+      var v=b.getAttribute("data-v2-view");
+      try {
+        if(v==="workload" && typeof window.showWorkloadSummary==="function") window.showWorkloadSummary();
+        else if(typeof window.setViewMode==="function") window.setViewMode(v);
+      } catch(err) { console.warn(err); }
+      return;
+    }
+
+    b=el.closest(".v2-dashboard-action");
+    if(b){
+      var a=b.getAttribute("data-dash-action");
+      try{
+        if(a==="timetable"){ dashboard(false); q('.main-tab[data-tab="timetable"]')?.click(); }
+        else if(a==="substitution"){ dashboard(false); q('.main-tab[data-tab="substitution"]')?.click(); }
+        else if(a==="summary"){ dashboard(false); if(typeof window.setViewMode==="function") window.setViewMode("summary"); }
+        else if(a==="workload"){ dashboard(false); if(typeof window.showWorkloadSummary==="function") window.showWorkloadSummary(); }
+        else if(a==="today"){ dashboard(false); if(typeof window.showToday==="function") window.showToday(); }
+        else if(a==="generate"){ if(typeof window.generate==="function") window.generate(); else q("#generate-btn-top")?.click(); }
+      }catch(err){ console.warn(err); }
+      return;
+    }
+
+    if(el.closest("#v2-admin-btn")){var admin=q("#admin-link");if(admin)admin.click();}
+  });
+
+  var mm=q("#v2-mobile-menu");
+  if(mm) mm.addEventListener("click",function(){var side=q("#v2-sidebar");if(side)side.classList.toggle("open");});
+})();
+</script>
+
+<script>
+(function(){
+  function updateV2Stats(){
+    try{
+      var es = Array.isArray(entries) ? entries : [];
+      var ts = new Set(es.map(function(e){return String(e.teacher || "").trim()}).filter(function(v){return v && !/^none$/i.test(v)}));
+      var cs = new Set(es.map(function(e){return String(e.klass || "").trim()}).filter(Boolean));
+      var locked = (typeof lockedLessons !== "undefined" && lockedLessons) ? Object.keys(lockedLessons).length : 0;
+      var scheduled = 0;
+      if(typeof schedule !== "undefined" && schedule && schedule.grid){
+        Object.keys(schedule.grid).forEach(function(day){
+          Object.keys(schedule.grid[day] || {}).forEach(function(period){
+            if(typeof isValidSubstitutionPeriod === "function" && !isValidSubstitutionPeriod(period)) return;
+            scheduled += (schedule.grid[day][period] || []).length;
+          });
+        });
+      }
+      var vals = {"v2-teachers":ts.size,"v2-classes":cs.size,"v2-lessons":es.length,"v2-locked":locked};
+      Object.keys(vals).forEach(function(k){var x=document.getElementById(k);if(x)x.textContent=vals[k]});
+      var cards = {"dash-teachers":ts.size,"dash-classes":cs.size,"dash-lessons":es.length,"dash-locked":locked,"dash-scheduled":scheduled};
+      Object.keys(cards).forEach(function(k){var x=document.getElementById(k);if(x)x.textContent=cards[k]});
+      if(typeof window.updateV2Dashboard==="function") window.updateV2Dashboard();
+    }catch(e){console.warn("Dashboard update:",e)}
+  }
+  window.updateV2Stats = updateV2Stats;
+  updateV2Stats();
+  setInterval(updateV2Stats,2000);
+})();
+  // Collapsible stats grid, remembers state
+  (function(){
+    var grid = document.querySelector(".v2-dashboard-grid");
+    var btn = document.getElementById("v2-stats-toggle");
+    var icon = document.getElementById("v2-stats-toggle-icon");
+    var label = document.getElementById("v2-stats-toggle-label");
+    if(!grid || !btn) return;
+    function apply(collapsed){
+      grid.classList.toggle("v2-collapsed", collapsed);
+      icon.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0deg)";
+      label.textContent = collapsed ? "Show stats" : "Hide stats";
+      localStorage.setItem("v2StatsCollapsed", collapsed ? "true" : "false");
+    }
+    apply(localStorage.getItem("v2StatsCollapsed") === "true");
+    btn.addEventListener("click", function(){
+      apply(!grid.classList.contains("v2-collapsed"));
+    });
+  })();
+</script>
+
+<script id="v2-dashboard-logic">
+(function(){
+  function todayName(){
+    var names=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    return names[new Date().getDay()];
+  }
+  function escDash(v){
+    return String(v ?? "").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]});
+  }
+  function validTeacher(t){
+    var s=String(t ?? "").trim();
+    return !!s && !/^none$/i.test(s) && !/^null$/i.test(s) && !/^undefined$/i.test(s);
+  }
+
+  window.updateV2Dashboard = function(){
+    try{
+      var es = Array.isArray(entries) ? entries : [];
+      var teachers = [...new Set(es.map(function(e){return String(e.teacher||"").trim()}).filter(validTeacher))].sort();
+      var classes = [...new Set(es.map(function(e){return String(e.klass||"").trim()}).filter(Boolean))].sort();
+      var day = todayName();
+      if(!DAYS.includes(day)) day = "Monday";
+
+      var todayEl=document.getElementById("dash-today");
+      if(todayEl) todayEl.textContent=day;
+
+      var absentSet=(typeof dspAbsent!=="undefined" && dspAbsent[day]) ? dspAbsent[day] : new Set();
+      var absentEl=document.getElementById("dash-absent");
+      if(absentEl) absentEl.textContent=absentSet.size;
+
+      var coverage="—";
+      if(typeof schedule!=="undefined" && schedule && typeof computeDailyWorkload==="function"){
+        var needed=0, assigned=0;
+        if(typeof buildDailySubstitutionPlan==="function"){
+          var plan=buildDailySubstitutionPlan(day, absentSet);
+          Object.keys(plan).forEach(function(k){ needed++; if(plan[k]) assigned++; });
+        }
+        coverage = needed===0 ? "None" : (assigned + "/" + needed);
+      }
+      var covEl=document.getElementById("dash-coverage");
+      if(covEl) covEl.textContent=coverage;
+
+      var status=document.getElementById("v2-dashboard-status");
+      if(status) status.textContent = (typeof schedule!=="undefined" && schedule) ? "Timetable generated" : "Setup in progress";
+
+      var table=document.getElementById("dash-workload-table");
+      if(!table) return;
+
+      if(typeof schedule==="undefined" || !schedule || typeof computeDailyWorkload!=="function"){
+        table.innerHTML='<div class="v2-dashboard-empty">Generate a timetable to see live teacher workload.</div>';
+        return;
+      }
+
+      var map=computeDailyWorkload(day);
+      var rows=teachers.map(function(t){return {teacher:t,count:map.get(t)||0};})
+        .sort(function(a,b){return b.count-a.count || a.teacher.localeCompare(b.teacher);})
+        .slice(0,10);
+
+      if(!rows.length){
+        table.innerHTML='<div class="v2-dashboard-empty">No teacher workload available for '+escDash(day)+'.</div>';
+        return;
+      }
+
+      var max=rows[0].count || 1;
+      var html='<table class="v2-dashboard-table"><thead><tr><th>Teacher</th><th>Periods</th><th>Load</th></tr></thead><tbody>';
+      rows.forEach(function(r){
+        var pct=Math.round((r.count/max)*100);
+        html+='<tr><td>'+escDash(r.teacher)+'</td><td>'+r.count+'</td><td><div style="height:6px;background:#eef2f7;border-radius:8px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,#4f6ef7,#6d5dfc);border-radius:8px;"></div></div></td></tr>';
+      });
+      html+='</tbody></table>';
+      table.innerHTML=html;
+    }catch(err){console.warn("Dashboard render:",err)}
+  };
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(function(){
+      if(typeof window.updateV2Dashboard==="function") window.updateV2Dashboard();
+    },250);
+  });
+})();
+</script>
+
+
+<script id="substitution-placeholder-guard">
+(function(){
+  function guard(){
+    try{
+      if (typeof scrubInvalidSubstitutionState === 'function') scrubInvalidSubstitutionState();
+      if (typeof removeInvalidSubstitutionOptionsFromDOM === 'function') removeInvalidSubstitutionOptionsFromDOM();
+    }catch(e){}
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    guard();
+    setTimeout(guard, 250);
+    setTimeout(guard, 1000);
+    const root=document.body;
+    if(root && window.MutationObserver){
+      let queued=false;
+      new MutationObserver(function(){
+        if(queued) return;
+        queued=true;
+        requestAnimationFrame(function(){ queued=false; guard(); });
+      }).observe(root,{subtree:true,childList:true});
+    }
+  });
+})();
 </script>
 </body>
 </html>
