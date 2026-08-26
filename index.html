@@ -5912,8 +5912,9 @@ setViewMode = function(mode) {
                 <option value="Saturday">Saturday</option>
               </select>
             </div>
-            <button id="dsp-refresh-btn-view" class="btn ghost small">🔄 Refresh Suggestions</button>
-<span id="dsp-summary-view" style="font-size:0.8rem;color:var(--text-muted);"></span>
+            <button id="dsp-refresh-btn" class="btn ghost small">🔄 Refresh Suggestions</button>
+            <button onclick="exportSubstitutionPDF()" class="btn primary small" style="background: #28a745; border-color: #28a745;">📄 Print Substitution</button>
+          <span id="dsp-summary" style="font-size:0.8rem;color:var(--text-muted);"></span>
           </div>
           <div id="dsp-table-container-view" class="dsp-table-wrap"></div>
         </div>
@@ -6120,7 +6121,13 @@ function exportSubstitutionPDF() {
     return;
   }
 
-  const daySelect = document.getElementById('dsp-day-select-view') || document.getElementById('dsp-day-select');
+    // Both copies of the day <select> can exist in the DOM at once (main tab + Quick
+  // Action view), so pick whichever one is actually visible, not just whichever exists.
+  const selMain = document.getElementById('dsp-day-select');
+  const selView = document.getElementById('dsp-day-select-view');
+  const daySelect = (selView && selView.offsetParent !== null) ? selView
+                   : (selMain && selMain.offsetParent !== null) ? selMain
+                   : (selMain || selView);
   const day = daySelect?.value || DAYS[0];
   
   if (typeof dspAbsent === 'undefined') {
@@ -6152,7 +6159,8 @@ function exportSubstitutionPDF() {
       // HARDCODE CLEAN SCHOOL NAME - CHANGE THIS
       // ========================================
       const SCHOOL_NAME = "PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR";  // Make sure this is clean text
-   const SCHOOL_ADDRESS = "Rampur"; 
+      const SCHOOL_ADDRESS = "Rampur";
+   
       
       let yPos = 40;
       const pageWidth = doc.internal.pageSize.width;
